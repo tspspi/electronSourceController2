@@ -114,15 +114,6 @@ static void ringBuffer_WriteChars(
         ringBuffer_WriteChar(lpBuf, bData[i]);
     }
 }
-#if 0
-    static void ringBuffer_WriteINT16(
-        volatile struct ringBuffer* lpBuf,
-        uint16_t bData
-    ) {
-        ringBuffer_WriteChar(lpBuf, (unsigned char)(bData & 0xFF));
-        ringBuffer_WriteChar(lpBuf, (unsigned char)((bData >> 8) & 0xFF));
-    }
-#endif
 
 /*
     Serial handler (UART0)
@@ -250,10 +241,10 @@ static void handleSerial0Messages_CompleteMessage(
     */
     ringBuffer_discardN(&serialRB0_RX, 3); /* Skip sync pattern */
     dwLen = dwLength - 3;
-    dwDiscardBytes = dwLength - 3;
+    dwDiscardBytes = dwLen;
 
     /* Remove end of line for next parser ... */
-    dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB0_RX, dwLen-1) == 0x0D) ? 2 : 1);
+    dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB0_RX, dwLen-1) == 0x0D) ? 1 : 0);
 
 
     /* Now copy message into a local buffer to make parsing WAY easier ... */
@@ -263,21 +254,6 @@ static void handleSerial0Messages_CompleteMessage(
     /*
         Now process that message at <handleSerial0Messages_StringBuffer, dwLen>
     */
-
-    /* Strip whitespace in whole message ... */
-    {
-        unsigned long int k,l;
-
-        k = 0; l = 0;
-        for(k = 0; k < dwLen; k=k+1) {
-            if(strIsWhite(handleSerial0Messages_StringBuffer[k]) != true) {
-                handleSerial0Messages_StringBuffer[l] = strCasefoldIfChar(handleSerial0Messages_StringBuffer[k]);
-                l = l + 1;
-            }
-        }
-
-        dwLen = l;
-    }
 
     /*
         Parse different commands
@@ -314,7 +290,7 @@ void handleSerial0Messages() {
         ringBuffer_ReadChar(&serialRB0_RX); /* Skip character */
     }
 
-    if(dwAvailableLength < 3) {
+    if(dwAvailableLength < 4) {
         return; /* Impossible */
     }
     if(
@@ -332,7 +308,7 @@ void handleSerial0Messages() {
         Now check if we have already received a complete message OR are seeing
         another more sync pattern - in the latter case we ignore any message ...
     */
-    dwMessageEnd = 0;
+    dwMessageEnd = 3;
     while((dwMessageEnd < dwAvailableLength) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != 0x0A) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != '$')) {
         dwMessageEnd = dwMessageEnd + 1;
     }
