@@ -18,19 +18,32 @@ int main() {
     */
 
     /*
-        Setup GPIO
-            PE0         RXD0 (Serial & USB)
-            PE1         TXD0 (Serial & USB)
-
-            PJ0         RXD3
-            PJ1         TXD3
-            PH1         TXD2
-            PH0         RXD2
-
-            PB7         OnBoard LED (OC0A)
+        PORTA & PORTC:
+            PSU digital in and out
+        PORTL:
+            Analog out for PSUs
+        PORTD:
+            PD7: Filament power on/off
+        PORTB:
+            PB7: Onboard LED (OC0A)
     */
-    DDRA = 0x01|0x02;
+    DDRA = 0x33;
+    DDRC = 0xCC;
+    DDRL = 0xFF;
+    DDRD = 0x80;
     DDRB = DDRB | 0x80;
+
+    /*
+        Disable all powersupplies and filament (sane safe values)
+    */
+
+    /*
+        INitialize ADCs
+    */
+
+    /*
+        Load voltage values from EEPROM
+    */
 
     /* Clear debug LED */
     PORTB = PORTB & 0x7F;
