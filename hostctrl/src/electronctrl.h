@@ -7,7 +7,11 @@
 
 enum egunError {
     egunE_Ok                        = 0,
-    egunE_OutOfMemory               = 1,
+
+    egunE_Failed,
+    egunE_OutOfMemory,
+    egunE_ConnectionError,
+    egunE_InvalidParam,
 };
 
 struct electronGun;
@@ -16,10 +20,14 @@ struct electronGun_VTBL;
 typedef enum egunError (*electronGun_Release)(
     struct electronGun* lpSelf
 );
+typedef enum egunError (*electronGun_RequestID)(
+    struct electronGun* lpSelf
+);
 
 
 struct electronGun_VTBL {
     electronGun_Release             release;
+    electronGun_RequestID           requestId;
 };
 
 struct electronGun {
