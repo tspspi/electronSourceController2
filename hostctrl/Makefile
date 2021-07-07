@@ -2,15 +2,20 @@ CCOBJ=clang -c -Wall -ansi -std=c99 -Werror -pedantic -DDEBUG
 CCLINK=clang  -DDEBUG
 CCLINKLIBS=-lpthread
 
-OBJS=tmp/electronctrl_serial.o \
-	tmp/maincli.o
+OBJSLIB=tmp/electronctrl_serial.o
+OBJSEXE=tmp/maincli.o
 
-all: bin/electronctrl
+all: bin/electronctrl \
+	bin/libelectronctrl.a
 
 
-bin/electronctrl: $(OBJS)
+bin/libelectronctrl.a: $(OBJSLIB)
 
-	$(CCLINK) -o bin/electronctrl $(OBJS) $(CCLINKLIBS)
+	ar -crs bin/libelectronctrl.a $(OBJSLIB)
+
+bin/electronctrl: $(OBJSEXE)
+
+	$(CCLINK) -L./bin/ -o bin/electronctrl $(OBJSEXE) $(CCLINKLIBS) -lelectronctrl
 
 tmp/electronctrl_serial.o: src/electronctrl_serial.c src/electronctrl.h
 
