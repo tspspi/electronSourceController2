@@ -63,6 +63,7 @@ is terminated via a CR LF or only LF (CR is simply ignored by the serial
 parser). Numbers are transmitted as ASCII decimal numbers.
 
 | Command                                 | Sequence               | Response                                                                                                     |
+| --------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
 | ID                                      | $$$ID<LF>              | Sends a simple ID response that identifies the firmware (ex. ```$$$electronctrl_20210707_001<LF>```)         |
 | Filament on                             | $$$FILON<LF>           | Switches filament power supply on                                                                            |
 | Filament off                            | $$$FILOFF<LF>          | Switches filament power supply off                                                                           |
