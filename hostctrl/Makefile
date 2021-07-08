@@ -13,7 +13,7 @@ bin/libelectronctrl.a: $(OBJSLIB)
 
 	ar -crs bin/libelectronctrl.a $(OBJSLIB)
 
-bin/electronctrl: $(OBJSEXE)
+bin/electronctrl: $(OBJSEXE) bin/libelectronctrl.a
 
 	$(CCLINK) -L./bin/ -o bin/electronctrl $(OBJSEXE) $(CCLINKLIBS) -lelectronctrl
 
