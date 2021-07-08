@@ -171,7 +171,7 @@ static enum egunError egunSerial__RequestID(
 
     r = write(lpThis->hSerialPort, egunSerial__RequestID__Message, sizeof(egunSerial__RequestID__Message)-1);
 
-    if(r != sizeof(egunSerial__RequestID__Message)) {
+    if(r != (sizeof(egunSerial__RequestID__Message)-1)) {
         return egunE_Failed;
     } else {
         return egunE_Ok;
@@ -200,7 +200,7 @@ struct electronGun_VTBL egunSerial_VTBL = {
 static inline unsigned long int egunSerial_ProcessingThread_HandleSerialData__RBAvail(
     struct egunSerial_Impl* lpThis
 ) {
-    if(lpThis->ringbufferIn.dwHead > lpThis->ringbufferIn.dwTail) {
+    if(lpThis->ringbufferIn.dwHead >= lpThis->ringbufferIn.dwTail) {
         return lpThis->ringbufferIn.dwHead - lpThis->ringbufferIn.dwTail;
     } else {
         return (ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE - lpThis->ringbufferIn.dwTail) + lpThis->ringbufferIn.dwHead;
@@ -454,7 +454,7 @@ enum egunError egunConnect_Serial(
         }
     #endif
 
-    sleep(3); /* We have to introduce a delay for USB since the device is reset while opening the USB port ... */
+    sleep(5); /* We have to introduce a delay for USB since the device is reset while opening the USB port ... */
 
     (*lpOut) = &(lpNew->objEgun);
     return egunE_Ok;
