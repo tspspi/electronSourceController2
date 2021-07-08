@@ -17,7 +17,15 @@
 #endif
 #include "./electronctrl.h"
 
+#if defined(__FreeBSD__)
+    #define ELECTRONCTRL_SERIAL__PROCESSINGHTREAD_EVENT__TERMINATE      0x00000001
+#endif
+
 #if defined(__FreeBSD__) || defined(__linux__)
+    /*
+        Helper routines for serial port handling - setting basic parameters
+        and async operation
+    */
     static enum egunError setInterfaceAttributes(
         int hPort,
         int speed,
@@ -101,6 +109,42 @@ struct egunSerial_Impl {
 static enum egunError egunSerial__Release(
     struct electronGun* lpSelf
 ) {
+    struct egunSerial_Impl* lpThis;
+    #if defined(__FreeBSD__)
+        struct kevent kev;
+    #endif
+
+    if(lpSelf == NULL) {
+        return egunE_InvalidParam;
+    }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    /*
+        Shutdown and release requires:
+            * Closing the serial port handle (this will remove kevent references
+              for the kqueue)
+            * Posting the termination event
+            * Stopping the thread / waiting for the thread to terminate. This
+              is easy for pthreads since the thread will terminate itself & we
+              will just join on it ...
+            * Releasing memory
+    */
+    #if defined(__FreeBSD__) || defined(__linux__)
+        close(lpThis->hSerialPort);
+        lpThis->hSerialPort = -1;
+
+        EV_SET(&kev, ELECTRONCTRL_SERIAL__PROCESSINGHTREAD_EVENT__TERMINATE, EVFILT_USER, EV_ENABLE, NOTE_TRIGGER, 0, NULL);
+        kevent(lpThis->kq, &kev, 1, NULL, 0, NULL);
+
+        pthread_join(lpThis->thrThread, NULL);
+        free(lpThis);
+
+        return egunE_Ok;
+    #else
+            #error "Missing implementation"
+    #endif
+
     return egunE_Failed;
 }
 
@@ -171,6 +215,15 @@ static void egunSerial_ProcessingThread_HandleSerialData(
             #ifdef DEBUG
                 printf("%s:%u Failed to add serial port to kqueue ...\n", __FILE__, __LINE__);
             #endif
+            return NULL; /* Terminate thread ... */
+        }
+
+        EV_SET(&kev, ELECTRONCTRL_SERIAL__PROCESSINGHTREAD_EVENT__TERMINATE, EVFILT_USER, EV_ADD|EV_ENABLE|EV_ONESHOT, 0, 0, NULL);
+        if(kevent(lpThis->kq, &kev, 1, NULL, 0, NULL) < 0) {
+            #ifdef DEBUG
+                printf("%s:%u Failed to add termination event to our user event listening queue\n", __FILE__, __LINE__);
+            #endif
+            return NULL; /* Terminate thread ... */
         }
 
         for(;;) {
@@ -191,6 +244,8 @@ static void egunSerial_ProcessingThread_HandleSerialData(
                 if((kev.ident == lpThis->hSerialPort) && (kev.filter == EVFILT_READ)) {
                     /* We are going to read serial data ... */
                     egunSerial_ProcessingThread_HandleSerialData(lpThis);
+                } else if((kev.filter == EVFILT_USER) && (kev.ident == ELECTRONCTRL_SERIAL__PROCESSINGHTREAD_EVENT__TERMINATE)) {
+                    break; /* Leave loop ... */
                 }
             }
         }
