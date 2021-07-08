@@ -260,11 +260,11 @@ static void handleSerial0Messages_CompleteMessage(
     */
     if(strCompare("id", 2, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Send ID response ... */
-        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ID, sizeof(handleSerial0Messages_Response__ID));
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ID, sizeof(handleSerial0Messages_Response__ID)-1);
         serialModeTX0();
     } else {
         /* Unknown: Send error response ... */
-        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ERR, sizeof(handleSerial0Messages_Response__ERR));
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ERR, sizeof(handleSerial0Messages_Response__ERR)-1);
         serialModeTX0();
     }
 }
