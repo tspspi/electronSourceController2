@@ -1,3 +1,7 @@
+#ifndef ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE
+    #define ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE    512
+#endif
+
 #include <stdlib.h>
 #if defined(__FreeBSD__) || defined(__linux__)
     #ifdef DEBUG
@@ -103,6 +107,12 @@ struct egunSerial_Impl {
     #if defined(__FreeBSD__)
         int                     kq;
     #endif
+
+    struct {
+        char                    bData[ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE];
+        unsigned long int       dwHead;
+        unsigned long int       dwTail;
+    } ringbufferIn;
 };
 
 
@@ -159,7 +169,7 @@ static enum egunError egunSerial__RequestID(
     if(lpSelf == NULL) { return egunE_InvalidParam; }
     lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
 
-    r = write(lpThis->hSerialPort, egunSerial__RequestID__Message, sizeof(egunSerial__RequestID__Message));
+    r = write(lpThis->hSerialPort, egunSerial__RequestID__Message, sizeof(egunSerial__RequestID__Message)-1);
 
     if(r != sizeof(egunSerial__RequestID__Message)) {
         return egunE_Failed;
@@ -186,15 +196,129 @@ struct electronGun_VTBL egunSerial_VTBL = {
     #define egunSerial_DefaultDevices_LEN (sizeof(egunSerial_DefaultDevices)/sizeof(char*))
 #endif
 
+
+static inline unsigned long int egunSerial_ProcessingThread_HandleSerialData__RBAvail(
+    struct egunSerial_Impl* lpThis
+) {
+    if(lpThis->ringbufferIn.dwHead > lpThis->ringbufferIn.dwTail) {
+        return lpThis->ringbufferIn.dwHead - lpThis->ringbufferIn.dwTail;
+    } else {
+        return (ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE - lpThis->ringbufferIn.dwTail) + lpThis->ringbufferIn.dwHead;
+    }
+}
+static inline void egunSerial_ProcessingThread_HandleSerialData__Discard(
+    struct egunSerial_Impl* lpThis,
+    unsigned long int dwLen
+) {
+    if(dwLen > egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) {
+        lpThis->ringbufferIn.dwTail = lpThis->ringbufferIn.dwHead;
+    } else {
+        lpThis->ringbufferIn.dwTail = (lpThis->ringbufferIn.dwTail + dwLen) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE;
+    }
+}
+static inline char egunSerial_ProcessingThread_HandleSerialData__RBPeek(
+    struct egunSerial_Impl* lpThis,
+    unsigned long int dwDistance
+) {
+    if(dwDistance > egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) {
+        return 0x00; /* Simply return a zero for out of bounds ... */
+    }
+    return lpThis->ringbufferIn.bData[(lpThis->ringbufferIn.dwTail + dwDistance) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE];
+}
+#if 0
+static inline enum egunError egunSerial_ProcessingThread_HandleSerialData__RBRead(
+    struct egunSerial_Impl* lpThis,
+    uint8_t* lpOut,
+    unsigned long int dwLength
+) {
+    unsigned long int i;
+
+    if(lpThis == NULL) { return egunE_InvalidParam; }
+    if((lpOut == NULL) && (dwLength != 0)) { return egunE_InvalidParam; }
+    if(dwLength > egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) { return egunE_InvalidParam; }
+
+    for(i = 0; i < dwLength; i=i+1) {
+        lpOut[i] = lpThis->ringbufferIn.bData[(lpThis->ringbufferIn.dwTail + i) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE];
+    }
+    lpThis->ringbufferIn.dwTail = (lpThis->ringbufferIn.dwTail + dwLength) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE;
+
+    return egunE_Ok;
+}
+#endif
+
+static void egunSerial_ProcessingThread_HandleSerialData_MsgInRingbuffer(
+    struct egunSerial_Impl* lpThis,
+    unsigned long int dwLen
+) {
+    unsigned long int i;
+    printf("Received message: ");
+    for(i = 0; i < dwLen; i=i+1) {
+        printf("%c", egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis, i));
+    }
+    printf("\n");
+    egunSerial_ProcessingThread_HandleSerialData__Discard(lpThis, dwLen);
+}
+
 static void egunSerial_ProcessingThread_HandleSerialData(
     struct egunSerial_Impl* lpThis
 ) {
     char bData;
     int r;
+    unsigned long int i;
 
     r = read(lpThis->hSerialPort, &bData, 1);
     if(r > 0) {
-        printf("%c", bData);
+        /* Add to ringbuffer */
+        if(((lpThis->ringbufferIn.dwHead+1) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE) == lpThis->ringbufferIn.dwTail) {
+            #ifdef DEBUG
+                printf("%s:%u Ringbuffer overflow. Dropping data\n", __FILE__, __LINE__);
+            #endif
+            return; /* Ignore anything that would lead to an overflow in the ringbuffer */
+        }
+
+        lpThis->ringbufferIn.bData[lpThis->ringbufferIn.dwHead] = bData;
+        lpThis->ringbufferIn.dwHead = (lpThis->ringbufferIn.dwHead + 1) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE;
+    } else {
+        return;
+    }
+
+    /* Check if we received a full message or garbage ... */
+    for(;;) {
+        for(;;) {
+            if(egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis) < 4) { return; }
+
+            /* Locate synchronization pattern */
+            if(egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,0) != '$') {
+                egunSerial_ProcessingThread_HandleSerialData__Discard(lpThis, 1);
+            }
+
+            if(
+                (egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,0) == '$')
+                && (egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,1) == '$')
+                && (egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,2) == '$')
+            ) {
+                break;
+            }
+        }
+
+        /*
+            We found a sync pattern at position 0 ...
+            Check if we received a full message by scanning for a LF. In case
+            we encounter another sync pattern discard everything up until there ...
+        */
+        for(i = 3; i < egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis); i = i + 1) {
+            if(egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis, i) == 0x0A) {
+                /* Got a full message - handle that message ... */
+                egunSerial_ProcessingThread_HandleSerialData_MsgInRingbuffer(lpThis, i+1);
+                break;
+            }
+            if(egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis, i) == '$') {
+                /* Skip everything up until here ... and restart process ... (resync) */
+                egunSerial_ProcessingThread_HandleSerialData__Discard(lpThis, i);
+                break;
+            }
+        }
+        return; /* Did not fully receive a message */
     }
 }
 
@@ -271,6 +395,9 @@ enum egunError egunConnect_Serial(
 
     lpNew->objEgun.lpReserved = (void*)lpNew;
     lpNew->objEgun.vtbl = &egunSerial_VTBL;
+
+    lpNew->ringbufferIn.dwHead = 0;
+    lpNew->ringbufferIn.dwTail = 0;
 
     #if defined(__FreeBSD__) || defined(__linux__)
         lpNew->hSerialPort = -1;
