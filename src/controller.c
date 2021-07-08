@@ -7,6 +7,7 @@
 #include "./serial.h"
 #include "./controller.h"
 #include "./sysclock.h"
+#include "./adc.h"
 
 int main() {
     #ifndef FRAMAC_SKIP
@@ -38,8 +39,14 @@ int main() {
     */
 
     /*
-        INitialize ADCs
+        INitialize ADCs:
+            * Free running mode
+            * MUX set to ADC0 for first conversion
+            * prescaler 128 (125 kHz ADC frequency -> 10 kHz sampling frqeuency
+                with 8 channels for 4 PSUs -> little bit more than 1 kHz sampling
+                of all voltages and currents - more than sufficient)
     */
+    adcInit();
 
     /*
         Load voltage values from EEPROM
