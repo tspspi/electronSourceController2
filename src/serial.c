@@ -286,19 +286,20 @@ void handleSerial0Messages() {
         ringBuffer_ReadChar(&serialRB0_RX); /* Skip character */
     }
 
-    if(dwAvailableLength < 4) {
-        return; /* Impossible */
-    }
-    if(
-        (ringBuffer_PeekCharN(&serialRB0_RX, 0) != '$') ||
-        (ringBuffer_PeekCharN(&serialRB0_RX, 1) != '$') ||
-        (ringBuffer_PeekCharN(&serialRB0_RX, 2) != '$')
+    if(ringBuffer_AvailableN(&serialRB0_RX) < 3) { return; }
+    while(
+        (
+            (ringBuffer_PeekCharN(&serialRB0_RX, 0) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB0_RX, 1) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB0_RX, 2) != '$')
+        )
+        && (ringBuffer_AvailableN(&serialRB0_RX) > 3)
     ) {
-        while(ringBuffer_PeekChar(&serialRB0_RX) == '$') {
-            ringBuffer_discardN(&serialRB0_RX, 1);
-        }
-        return; /* We will resynchronize on the next pattern anyways ... */
+        ringBuffer_discardN(&serialRB0_RX, 1);
     }
+
+    if(ringBuffer_AvailableN(&serialRB0_RX) < 4) { return; }
+    dwAvailableLength = ringBuffer_AvailableN(&serialRB0_RX);
 
     /*
         Now check if we have already received a complete message OR are seeing
@@ -313,7 +314,7 @@ void handleSerial0Messages() {
         handleSerial0Messages_CompleteMessage(dwMessageEnd);
     }
     if(ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) == '$') {
-        /* Discard ... we do this by simply skipping the sync pattern ... */
+        /* Discard ... we do this by simply skipping the sync pattern...  */
         ringBuffer_discardN(&serialRB0_RX, 3);
     }
 
