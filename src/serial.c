@@ -282,11 +282,7 @@ void handleSerial0Messages() {
     /*
         First we scan for the synchronization pattern
     */
-    if(dwAvailableLength < 1) {
-        return; /* Impossible */
-    }
-
-    while(ringBuffer_PeekChar(&serialRB0_RX) != '$') {
+    while((ringBuffer_PeekChar(&serialRB0_RX) != '$') && (ringBuffer_AvailableN(&serialRB0_RX) > 0)) {
         ringBuffer_ReadChar(&serialRB0_RX); /* Skip character */
     }
 
