@@ -443,6 +443,22 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[3].polPolarity = psuPolarity_Positive;
     } else if(strCompare("psupol4n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[3].polPolarity = psuPolarity_Negative;
+    } else if(strCompare("psuon1", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].bOutputEnable = true;
+    } else if(strCompare("psuoff1", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].bOutputEnable = false;
+    } else if(strCompare("psuon2", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[1].bOutputEnable = true;
+    } else if(strCompare("psuoff2", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[1].bOutputEnable = false;
+    } else if(strCompare("psuon3", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[2].bOutputEnable = true;
+    } else if(strCompare("psuoff3", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[2].bOutputEnable = false;
+    } else if(strCompare("psuon4", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[3].bOutputEnable = true;
+    } else if(strCompare("psuoff4", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[3].bOutputEnable = false;
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
