@@ -116,6 +116,36 @@ static void ringBuffer_WriteChars(
     }
 }
 
+static void ringBuffer_WriteASCIIUnsignedInt(
+    volatile struct ringBuffer* lpBuf,
+    uint32_t ui
+) {
+    uint8_t i;
+    char bTemp[10];
+    uint8_t len;
+    uint32_t current;
+
+    /*
+        We perform a simple conversion of the unsigned int
+        and push all numbers into the ringbuffer
+    */
+    if(ui == 0) {
+        ringBuffer_WriteChar(lpBuf, 0x30);
+    } else {
+        current = ui;
+        len = 0;
+        while(current != 0) {
+            bTemp[len] = ((uint8_t)(current % 10)) + 0x30;
+            len = len + 1;
+            current = current / 10;
+        }
+
+        for(i = 0; i < len; i=i+1) {
+            ringBuffer_WriteChar(lpBuf, bTemp[len - 1 - i]);
+        }
+    }
+}
+
 /*
     Serial handler (UART0)
 
