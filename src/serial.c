@@ -10,7 +10,7 @@
 #include "./sysclock.h"
 #include "./adc.h"
 
-extern volatile struct cfgConfiguration configuration;
+
 
 /*
     Ringbuffer utilis
