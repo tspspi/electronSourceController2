@@ -5,6 +5,13 @@
     extern "C" {
 #endif
 
+#ifndef ADC_CHANNELS16
+    extern uint16_t currentADC[8];
+#else
+    extern uint16_t currentADC[16];
+#endif
+
+
 void adcInit();
 
 #ifdef __cplusplus
