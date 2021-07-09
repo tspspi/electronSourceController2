@@ -62,26 +62,26 @@ fixed synchronization pattern consisting of three dollar signs. Each command
 is terminated via a CR LF or only LF (CR is simply ignored by the serial
 parser). Numbers are transmitted as ASCII decimal numbers.
 
-| Command                                 | Sequence               | Response                                                                                                     | Status          |
-| --------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ | --------------- |
-| ID                                      | $$$ID<LF>              | Sends a simple ID response that identifies the firmware (ex. ```$$$electronctrl_20210707_001<LF>```)         | working, tested |
-| Filament on                             | $$$FILON<LF>           | Switches filament power supply on                                                                            |                 |
-| Filament off                            | $$$FILOFF<LF>          | Switches filament power supply off                                                                           |                 |
-| Estimate beam current                   | $$$BEAMA<LF>           | Calculates estimated beam current in 1/10 of microamperes                                                    |                 |
-| Beam HV on                              | $$$BEAMHVON<LF>        | Switches beam high voltage on (slowly, performing insulation test)                                           |                 |
-| Beam HV off                             | $$$BEAMHVOFF<LF>       | Switches beam high voltage off                                                                               |                 |
-| Get PSU current                         | $$$PSUGETA[n]<LF>      | Gets current for power supply 1,2,3,4                                                                        |                 |
-| Get PSU voltage                         | $$$PSUGETV[n]<LF>      | Gets voltage for power supply 1,2,3,4                                                                        |                 |
-| Get PSU modes                           | $$$PSUMODE<LF>         | Gets the mode for each PSU as a sequence of 4 ASCII chars (A or V for current or voltage controled mode)     |                 |
-| Set PSU current limit                   | $$$PSUSETA[n][mmm]<LF> | Sets the power supply current limit for one of the 4 PSUs. The limit is supplied in 1/10 of an microampere   |                 |
-| Set PSU target voltage                  | $$$PSUSETV[n][mmm]<LF> | Sets the power supply voltage for one of the 4 PSUs. The voltage is set in V                                 |                 |
-| Set PSU polarity                        | $$$PSUPOL[n][p/n]<LF>  | Sets the polarity to be positive or negative                                                                 |                 |
-| Set PSU output enable                   | $$$PSUON[n]<LF>        | Enabled the output of the given PSU                                                                          |                 |
-| Set PSU output disable                  | $$$PSUOFF[n]<LF>       | Disabled the output of the given PSU                                                                         |                 |
-| Disable all voltages (PSU and filament) | $$$OFF<LF>             | Disabled all voltages including the filament supply                                                          |                 |
-|                                         |                        |                                                                                                              |                 |
-| Get filament voltage                    | $$$FILV<LF>            | Measures filament voltage (if supported)                                                                     |                 |
-| Get filament current                    | $$$FILA<LF>            | Measures filament current (if supported)                                                                     |                 |
+| Command                                 | Sequence               | Response                                                                                                     | Status                           |
+| --------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| ID                                      | $$$ID<LF>              | Sends a simple ID response that identifies the firmware (ex. ```$$$electronctrl_20210707_001<LF>```)         | working, tested                  |
+| Filament on                             | $$$FILON<LF>           | Switches filament power supply on                                                                            |                                  |
+| Filament off                            | $$$FILOFF<LF>          | Switches filament power supply off                                                                           |                                  |
+| Estimate beam current                   | $$$BEAMA<LF>           | Calculates estimated beam current in 1/10 of microamperes                                                    |                                  |
+| Beam HV on                              | $$$BEAMHVON<LF>        | Switches beam high voltage on (slowly, performing insulation test)                                           |                                  |
+| Beam HV off                             | $$$BEAMHVOFF<LF>       | Switches beam high voltage off                                                                               |                                  |
+| Get PSU current                         | $$$PSUGETA[n]<LF>      | Gets current for power supply 1,2,3,4                                                                        | working, tested (maybe rescsale) |
+| Get PSU voltage                         | $$$PSUGETV[n]<LF>      | Gets voltage for power supply 1,2,3,4                                                                        | working, tested (maybe rescsale) |
+| Get PSU modes                           | $$$PSUMODE<LF>         | Gets the mode for each PSU as a sequence of 4 ASCII chars (A or V for current or voltage controled mode)     |                                  |
+| Set PSU current limit                   | $$$PSUSETA[n][mmm]<LF> | Sets the power supply current limit for one of the 4 PSUs. The limit is supplied in 1/10 of an microampere   |                                  |
+| Set PSU target voltage                  | $$$PSUSETV[n][mmm]<LF> | Sets the power supply voltage for one of the 4 PSUs. The voltage is set in V                                 |                                  |
+| Set PSU polarity                        | $$$PSUPOL[n][p/n]<LF>  | Sets the polarity to be positive or negative                                                                 |                                  |
+| Set PSU output enable                   | $$$PSUON[n]<LF>        | Enabled the output of the given PSU                                                                          |                                  |
+| Set PSU output disable                  | $$$PSUOFF[n]<LF>       | Disabled the output of the given PSU                                                                         |                                  |
+| Disable all voltages (PSU and filament) | $$$OFF<LF>             | Disabled all voltages including the filament supply                                                          |                                  |
+|                                         |                        |                                                                                                              |                                  |
+| Get filament voltage                    | $$$FILV<LF>            | Measures filament voltage (if supported)                                                                     |                                  |
+| Get filament current                    | $$$FILA<LF>            | Measures filament current (if supported)                                                                     |                                  |
 
 * High level:
     * Beam HV on (enable / disable beam)
