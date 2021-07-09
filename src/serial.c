@@ -24,7 +24,7 @@
 static inline uint16_t serialADC2VoltsHCP(
     uint16_t adcCounts
 ) {
-    return (uint16_t)((double)(adcCounts) * 3.1738);
+    return (uint16_t)((double)(adcCounts) * 3.1738 * 1.015);
 }
 static inline uint16_t serialADC2TenthMicroampsHCP(
     uint16_t adcCounts
