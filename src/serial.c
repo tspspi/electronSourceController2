@@ -10,7 +10,27 @@
 #include "./sysclock.h"
 #include "./adc.h"
 
+/*
+    ADC counts to current or voltage:
 
+        HCP 14-6500:        max. 6.5 kV, 2 mA <-> 0...10V
+
+        0...5V <--> 3.25 kV, 1 mA
+        5V <-> 1024 ADC counts
+        1 ADC count <-> 0.0048828125V
+            0.0048828125 <-> 0.003173828125 kV = 3.1738 V
+                         <-> 0.0009765625 mA = 0.9765625 uA
+*/
+static inline uint16_t serialADC2VoltsHCP(
+    uint16_t adcCounts
+) {
+    return (uint16_t)((double)(adcCounts) * 3.1738);
+}
+static inline uint16_t serialADC2TenthMicroampsHCP(
+    uint16_t adcCounts
+) {
+    return (uint16_t)((double)(adcCounts) * 9.765625);
+}
 
 /*
     Ringbuffer utilis
@@ -301,8 +321,10 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[0];
             sei();
         }
+        v = serialADC2VoltsHCP(v);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '1');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -313,8 +335,10 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[2];
             sei();
         }
+        v = serialADC2VoltsHCP(v);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '2');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -325,8 +349,10 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[4];
             sei();
         }
+        v = serialADC2VoltsHCP(v);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '3');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -337,8 +363,10 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[6];
             sei();
         }
+        v = serialADC2VoltsHCP(v);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '4');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -349,8 +377,10 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[1];
             sei();
         }
+        a = serialADC2TenthMicroampsHCP(a);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '1');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -361,8 +391,10 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[3];
             sei();
         }
+        a = serialADC2TenthMicroampsHCP(a);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '2');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -373,8 +405,10 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[5];
             sei();
         }
+        a = serialADC2TenthMicroampsHCP(a);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '3');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
@@ -385,8 +419,10 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[7];
             sei();
         }
+        a = serialADC2TenthMicroampsHCP(a);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '4');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
