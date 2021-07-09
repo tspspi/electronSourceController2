@@ -26,10 +26,10 @@ static uint8_t adcCurrentMux;
 ISR(ADC_vect) {
     #ifndef ADC_CHANNELS16
         uint8_t oldMUX = ADMUX;
-        ADMUX = (((oldMUX & 0x1F) + 1) & 0x1F) | (oldMUX & 0xE0);
 
-        oldMUX = oldMUX & 0x1F; /* Channel index */
-        currentADC[oldMUX] = ADC;
+        currentADC[(oldMUX + 7) & 0x07] = ADC;
+
+        ADMUX = (((oldMUX & 0x1F) + 1) & 0x07) | (oldMUX & 0xE0);
     #else
 
     #endif
@@ -43,14 +43,26 @@ void adcInit() {
 
     adcCurrentMux = 0;
 
+    #ifndef ADC_CHANNELS16
+        for(unsigned long int i = 0; i < 8; i=i+1) {
+            currentADC[i] = ~0;
+        }
+    #else
+        for(unsigned long int i = 0; i < 16; i=i+1) {
+            currentADC[i] = ~0;
+        }
+    #endif
+
+    PRR0 = PRR0 & ~(0x01); /* Disable power saving features for ADC */
     ADMUX = 0x40; /* AVCC reference voltage, MUX 0, right aligned */
     ADCSRB = 0x00; /* Free running trigger mode, highest mux bit 0 */
-    ADCSRA = 0x2F; /* Prescaler / 128 -> about 1 kHz measurement effective for all PSUs, interrupt enable; ADCs currently DISABLED */
+    ADCSRA = 0xBF; /* Prescaler / 128 -> about 1 kHz measurement effective for all PSUs, interrupt enable; ADCs currently DISABLED */
+    // ADCSRA = 0x9F; /* Without auto trigger mode (ADATE is 0) */
 
     SREG = oldSREG;
 
     /* Launch ADC ... */
-    ADCSRA = ADCSRA | 0xC0; /* Enable and start ... */
+    ADCSRA = ADCSRA | 0x40; /* Start first conversion ... */
 }
 
 #ifdef __cplusplus

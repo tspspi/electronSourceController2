@@ -39,16 +39,6 @@ int main() {
     */
 
     /*
-        INitialize ADCs:
-            * Free running mode
-            * MUX set to ADC0 for first conversion
-            * prescaler 128 (125 kHz ADC frequency -> 10 kHz sampling frqeuency
-                with 8 channels for 4 PSUs -> little bit more than 1 kHz sampling
-                of all voltages and currents - more than sufficient)
-    */
-    adcInit();
-
-    /*
         Load voltage values from EEPROM
     */
 
@@ -67,6 +57,17 @@ int main() {
     #ifndef FRAMAC_SKIP
 		sei();
 	#endif
+
+    /*
+        INitialize ADCs:
+            * Free running mode
+            * MUX set to ADC0 for first conversion
+            * prescaler 128 (125 kHz ADC frequency -> 10 kHz sampling frqeuency
+                with 8 channels for 4 PSUs -> little bit more than 1 kHz sampling
+                of all voltages and currents - more than sufficient)
+    */
+    adcInit();
+
 
     for(;;) {
         /*

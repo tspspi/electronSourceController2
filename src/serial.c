@@ -8,6 +8,7 @@
 #include "./serial.h"
 #include "./controller.h"
 #include "./sysclock.h"
+#include "./adc.h"
 
 extern volatile struct cfgConfiguration configuration;
 
@@ -262,6 +263,37 @@ static void handleSerial0Messages_CompleteMessage(
         /* Send ID response ... */
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ID, sizeof(handleSerial0Messages_Response__ID)-1);
         serialModeTX0();
+#ifdef DEBUG
+    } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        /* Deliver raw adc value of frist channel for testing purpose ... */
+        char bTemp[6];
+        uint16_t adcValue = currentADC[0];
+
+        int len = 0;
+        unsigned long int i;
+
+        if(adcValue == 0) {
+            ringBuffer_WriteChars(&serialRB0_TX, "$$$0\n", 5);
+        } else {
+            ringBuffer_WriteChars(&serialRB0_TX, "$$$", 3);
+
+            len = 0;
+            while(adcValue > 0) {
+                uint16_t nextVal = adcValue % 10;
+                adcValue = adcValue / 10;
+
+                nextVal = nextVal + 0x30;
+                bTemp[len] = nextVal;
+                len = len + 1;
+            }
+
+            for(i = 0; i < len; i=i+1) {
+                ringBuffer_WriteChar(&serialRB0_TX, bTemp[len - 1 - i]);
+            }
+            ringBuffer_WriteChar(&serialRB0_TX, '\n');
+        }
+        serialModeTX0();
+#endif
     } else {
         /* Unknown: Send error response ... */
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ERR, sizeof(handleSerial0Messages_Response__ERR)-1);
