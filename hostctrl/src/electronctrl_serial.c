@@ -454,7 +454,7 @@ enum egunError egunConnect_Serial(
         }
     #endif
 
-    sleep(5); /* We have to introduce a delay for USB since the device is reset while opening the USB port ... */
+    sleep(7); /* We have to introduce a delay for USB since the device is reset while opening the USB port ... */
 
     (*lpOut) = &(lpNew->objEgun);
     return egunE_Ok;
