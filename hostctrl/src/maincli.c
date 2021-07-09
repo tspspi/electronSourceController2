@@ -67,6 +67,30 @@ int main(int argc, char* argv[]) {
     }
 
 sleep(5);
+e = lpEgun->vtbl->requestId(lpEgun);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+sleep(5);
+e = lpEgun->vtbl->getCurrentVoltage(lpEgun, 1);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentVoltage(lpEgun, 2);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentVoltage(lpEgun, 3);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentVoltage(lpEgun, 4);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentCurrent(lpEgun, 1);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentCurrent(lpEgun, 2);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentCurrent(lpEgun, 3);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+e = lpEgun->vtbl->getCurrentCurrent(lpEgun, 4);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+sleep(5);
+e = lpEgun->vtbl->requestId(lpEgun);
+if(e != egunE_Ok) { printf("%s:%u Failed to send command (%u)\n", __FILE__, __LINE__, e); }
+sleep(10);
+
     e = lpEgun->vtbl->release(lpEgun);
     #ifdef DEBUG
         printf("%s:%u Release returned %u (%s)\n", __FILE__, __LINE__, e, (e == egunE_Ok) ? "ok" : "failed");

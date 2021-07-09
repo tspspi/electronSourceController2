@@ -23,11 +23,21 @@ typedef enum egunError (*electronGun_Release)(
 typedef enum egunError (*electronGun_RequestID)(
     struct electronGun* lpSelf
 );
+typedef enum egunError (*electronGun_GetCurrentVoltage)(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex
+);
+typedef enum egunError (*electronGun_GetCurrentCurrent)(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex
+);
 
 
 struct electronGun_VTBL {
     electronGun_Release             release;
     electronGun_RequestID           requestId;
+    electronGun_GetCurrentVoltage   getCurrentVoltage;
+    electronGun_GetCurrentCurrent   getCurrentCurrent;
 };
 
 struct electronGun {

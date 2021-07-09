@@ -178,14 +178,62 @@ static enum egunError egunSerial__RequestID(
     }
 }
 
+static char egunSerial__electronGun_GetCurrentVoltage__MessageFmt[] = "$$$psugetv%u\n";
+static enum egunError egunSerial__electronGun_GetCurrentVoltage(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
 
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    char bCommand[strlen(egunSerial__electronGun_GetCurrentVoltage__MessageFmt)]; /* Note: Do not require +1 since %u occupies two places */
+
+    sprintf(bCommand, egunSerial__electronGun_GetCurrentVoltage__MessageFmt, dwPSUIndex);
+
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+static char egunSerial__electronGun_GetCurrentCurrent__MessageFmt[] = "$$$psugeta%u\n";
+static enum egunError egunSerial__electronGun_GetCurrentCurrent(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    char bCommand[strlen(egunSerial__electronGun_GetCurrentCurrent__MessageFmt)]; /* Note: Do not require +1 since %u occupies two places */
+
+    sprintf(bCommand, egunSerial__electronGun_GetCurrentCurrent__MessageFmt, dwPSUIndex);
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
 
 
 
 
 struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__Release,
-    &egunSerial__RequestID
+    &egunSerial__RequestID,
+    &egunSerial__electronGun_GetCurrentVoltage,
+    &egunSerial__electronGun_GetCurrentCurrent
 };
 
 
