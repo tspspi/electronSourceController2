@@ -57,7 +57,6 @@ void adcInit() {
     ADMUX = 0x40; /* AVCC reference voltage, MUX 0, right aligned */
     ADCSRB = 0x00; /* Free running trigger mode, highest mux bit 0 */
     ADCSRA = 0xBF; /* Prescaler / 128 -> about 1 kHz measurement effective for all PSUs, interrupt enable; ADCs currently DISABLED */
-    // ADCSRA = 0x9F; /* Without auto trigger mode (ADATE is 0) */
 
     SREG = oldSREG;
 
