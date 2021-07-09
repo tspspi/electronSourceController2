@@ -9,6 +9,7 @@
 #include "./controller.h"
 #include "./sysclock.h"
 #include "./adc.h"
+#include "./psu.h"
 
 /*
     ADC counts to current or voltage:
@@ -426,6 +427,22 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
+    } else if(strCompare("psupol1p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].polPolarity = psuPolarity_Positive;
+    } else if(strCompare("psupol1n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].polPolarity = psuPolarity_Negative;
+    } else if(strCompare("psupol2p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[1].polPolarity = psuPolarity_Positive;
+    } else if(strCompare("psupol2n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[1].polPolarity = psuPolarity_Negative;
+    } else if(strCompare("psupol3p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[2].polPolarity = psuPolarity_Positive;
+    } else if(strCompare("psupol3n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[2].polPolarity = psuPolarity_Negative;
+    } else if(strCompare("psupol4p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[3].polPolarity = psuPolarity_Positive;
+    } else if(strCompare("psupol4n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[3].polPolarity = psuPolarity_Negative;
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */

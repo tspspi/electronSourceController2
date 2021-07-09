@@ -82,6 +82,6 @@ int main() {
         handleSerial0Messages(); /* main external serial interface */
 
         psuUpdateMeasuredState();
-        void psuSetOutputs();
+        psuSetOutputs();
     }
 }

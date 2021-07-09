@@ -36,6 +36,8 @@ struct psuState {
     extern "C" {
 #endif
 
+extern struct psuState psuStates[4];
+
 void psuInit();
 void psuSetOutput(int psuIndex);
 void psuSetOutputs();
