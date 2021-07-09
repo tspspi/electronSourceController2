@@ -257,8 +257,9 @@ static bool strCompare(
 
 
 static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210707_001\n";
-static unsigned char handleSerial0Messages_Response__ERR[] = "$$$ERR\n";
-
+static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
+static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
+static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
 
 static void handleSerial0Messages_CompleteMessage(
     unsigned long int dwLength
@@ -292,6 +293,102 @@ static void handleSerial0Messages_CompleteMessage(
     if(strCompare("id", 2, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Send ID response ... */
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ID, sizeof(handleSerial0Messages_Response__ID)-1);
+        serialModeTX0();
+    } else if(strCompare("psugetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t v;
+        {
+            cli();
+            v = currentADC[0];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '1');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugetv2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t v;
+        {
+            cli();
+            v = currentADC[2];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '2');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugetv3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t v;
+        {
+            cli();
+            v = currentADC[4];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '3');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugetv4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t v;
+        {
+            cli();
+            v = currentADC[6];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '4');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugeta1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t a;
+        {
+            cli();
+            a = currentADC[1];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '1');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugeta2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t a;
+        {
+            cli();
+            a = currentADC[3];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '2');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugeta3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t a;
+        {
+            cli();
+            a = currentADC[5];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '3');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
+    } else if(strCompare("psugeta4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t a;
+        {
+            cli();
+            a = currentADC[7];
+            sei();
+        }
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, '4');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
