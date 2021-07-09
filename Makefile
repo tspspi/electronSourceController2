@@ -6,11 +6,13 @@ FLASHMETHOD=wiring
 SRCFILES=src/controller.c \
 	src/serial.c \
 	src/sysclock.c \
-	src/adc.c
+	src/adc.c \
+	src/psu.c
 HEADFILES=src/controller.h \
 	src/serial.h \
 	src/sysclock.h \
-	src/adc.h
+	src/adc.h \
+	src/psu.h
 
 all: bin/controller.hex
 

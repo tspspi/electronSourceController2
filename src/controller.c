@@ -8,6 +8,7 @@
 #include "./controller.h"
 #include "./sysclock.h"
 #include "./adc.h"
+#include "./psu.h"
 
 int main() {
     #ifndef FRAMAC_SKIP
@@ -28,15 +29,12 @@ int main() {
         PORTB:
             PB7: Onboard LED (OC0A)
     */
-    DDRA = 0x33;
-    DDRC = 0xCC;
-    DDRL = 0xFF;
-    DDRD = 0x80;
-    DDRB = DDRB | 0x80;
+    DDRA = 0x33;    PORTA = 0x22;
+    DDRC = 0xCC;    PORTC = 0x40;
+    DDRL = 0xFF;    PORTL = 0x00;
+    DDRD = 0x80;    PORTD = 0x00;
 
-    /*
-        Disable all powersupplies and filament (sane safe values)
-    */
+    DDRB = DDRB | 0x80;
 
     /*
         Load voltage values from EEPROM
@@ -68,6 +66,10 @@ int main() {
     */
     adcInit();
 
+    /*
+        Initialize power supply interface
+    */
+    psuInit();
 
     for(;;) {
         /*
@@ -78,5 +80,8 @@ int main() {
             for such constraints during slow control of the experiment
         */
         handleSerial0Messages(); /* main external serial interface */
+
+        psuUpdateMeasuredState();
+        void psuSetOutputs();
     }
 }
