@@ -159,7 +159,7 @@ static enum egunError egunSerial__Release(
 }
 
 
-static char egunSerial__RequestID__Message[] = "$$$id\r\n";
+static char egunSerial__RequestID__Message[] = "$$$id\n";
 static enum egunError egunSerial__RequestID(
     struct electronGun* lpSelf
 ) {
