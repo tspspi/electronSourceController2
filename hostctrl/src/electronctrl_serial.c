@@ -226,6 +226,57 @@ static enum egunError egunSerial__electronGun_GetCurrentCurrent(
     }
 }
 
+static char egunSerial__electronGun_SetPSUPolarity__MessageFmt[] = "$$$psupol%u%c\n";
+static enum egunError egunSerial__electronGun_SetPSUPolarity(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    enum egunPolarity polPolarity
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+    if((polPolarity != egunPolarity_Pos) && (polPolarity != egunPolarity_Neg)) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    char bCommand[strlen(egunSerial__electronGun_GetCurrentCurrent__MessageFmt)-2];
+
+    sprintf(bCommand, egunSerial__electronGun_SetPSUPolarity__MessageFmt, dwPSUIndex, (polPolarity == egunPolarity_Pos) ? 'p' : 'n');
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
+static char egunSerial__electronGun_SetPSUOn__MessageFmt[] = "$$$psuon%u\n";
+static char egunSerial__electronGun_SetPSUOff__MessageFmt[] = "$$$psuoff%u\n";
+static enum egunError egunSerial__electronGun_SetPSUEnabled(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    bool bEnable
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    char bCommand[strlen(egunSerial__electronGun_GetCurrentCurrent__MessageFmt)];
+
+    sprintf(bCommand, (bEnable == true) ? egunSerial__electronGun_SetPSUOn__MessageFmt : egunSerial__electronGun_SetPSUOff__MessageFmt, dwPSUIndex);
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
 
 
 
@@ -233,7 +284,9 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__Release,
     &egunSerial__RequestID,
     &egunSerial__electronGun_GetCurrentVoltage,
-    &egunSerial__electronGun_GetCurrentCurrent
+    &egunSerial__electronGun_GetCurrentCurrent,
+    &egunSerial__electronGun_SetPSUPolarity,
+    &egunSerial__electronGun_SetPSUEnabled
 };
 
 
