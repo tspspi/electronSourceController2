@@ -82,6 +82,5 @@ parser). Numbers are transmitted as ASCII decimal numbers.
 | Set PSU output enable                   | $$$PSUON[n]<LF>        | Enabled the output of the given PSU                                                                          | working                          |
 | Set PSU output disable                  | $$$PSUOFF[n]<LF>       | Disabled the output of the given PSU                                                                         | working                          |
 | Disable all voltages (PSU and filament) | $$$OFF<LF>             | Disabled all voltages including the filament supply                                                          |                                  |
-|                                         |                        |                                                                                                              |                                  |
 | Get filament voltage                    | $$$FILV<LF>            | Measures filament voltage (if supported)                                                                     |                                  |
 | Get filament current                    | $$$FILA<LF>            | Measures filament current (if supported)                                                                     |                                  |
