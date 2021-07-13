@@ -54,7 +54,16 @@ typedef enum egunError (*electronGun_SetPSUEnabled)(
     unsigned long int dwPSUIndex,
     bool bEnable
 );
-
+typedef enum egunError (*electronGun_SetVoltage)(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    unsigned long int dwVolts
+);
+typedef enum egunError (*electronGun_SetCurrent)(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    unsigned long int dwMicroamps
+);
 
 struct electronGun_VTBL {
     electronGun_Release             release;
@@ -63,6 +72,8 @@ struct electronGun_VTBL {
     electronGun_GetCurrentCurrent   getCurrentCurrent;
     electronGun_SetPSUPolarity      setPSUPolarity;
     electronGun_SetPSUEnabled       setPSUEnabled;
+    electronGun_SetVoltage          setVoltage;
+    electronGun_SetCurrent          setCurrent;
 };
 
 struct electronGun {

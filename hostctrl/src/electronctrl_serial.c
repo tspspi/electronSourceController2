@@ -278,6 +278,54 @@ static enum egunError egunSerial__electronGun_SetPSUEnabled(
     }
 }
 
+static char egunSerial__electronGun_SetVoltage__MessageFmt[] = "$$$psusetv%u%u\n";
+static enum egunError egunSerial__electronGun_SetVoltage(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    unsigned long int dwVolts
+) {
+    struct egunSerial_Impl* lpThis;
+    char bCommand[32];
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+    if(dwVolts > 3250) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    sprintf(bCommand, egunSerial__electronGun_SetVoltage__MessageFmt, dwPSUIndex, dwVolts);
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+static char egunSerial__electronGun_SetCurrent__MessageFmt[] = "$$$psuseta%u%u\n";
+static enum egunError egunSerial__electronGun_SetCurrent(
+    struct electronGun* lpSelf,
+    unsigned long int dwPSUIndex,
+    unsigned long int dwMicroamps
+) {
+    struct egunSerial_Impl* lpThis;
+    char bCommand[32];
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    if((dwPSUIndex < 1) || (dwPSUIndex > 4)) { return egunE_InvalidParam; }
+    if(dwMicroamps > 1000) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    sprintf(bCommand, egunSerial__electronGun_SetCurrent__MessageFmt, dwPSUIndex, dwMicroamps);
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
 
 
 struct electronGun_VTBL egunSerial_VTBL = {
@@ -286,7 +334,10 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__electronGun_GetCurrentVoltage,
     &egunSerial__electronGun_GetCurrentCurrent,
     &egunSerial__electronGun_SetPSUPolarity,
-    &egunSerial__electronGun_SetPSUEnabled
+    &egunSerial__electronGun_SetPSUEnabled,
+
+    &egunSerial__electronGun_SetVoltage,
+    &egunSerial__electronGun_SetCurrent
 };
 
 
