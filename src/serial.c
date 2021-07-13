@@ -10,6 +10,7 @@
 #include "./sysclock.h"
 #include "./adc.h"
 #include "./psu.h"
+#include "./pwmout.h"
 
 /*
     ADC counts to current or voltage:
@@ -275,7 +276,39 @@ static bool strCompare(
 
     return true;
 }
+static bool strComparePrefix(
+    char* lpA,
+    unsigned long int dwLenA,
+    unsigned char* lpB,
+    unsigned long int dwLenB
+) {
+    unsigned long int i;
 
+    if(dwLenA > dwLenB) { return false; }
+    for(i = 0; i < dwLenA; i=i+1) {
+        if(lpA[i] != lpB[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+static uint32_t strASCIIToDecimal(
+    uint8_t* lpStr,
+    unsigned long int dwLen
+) {
+    unsigned long int i;
+    uint8_t currentChar;
+    uint32_t currentValue = 0;
+
+    for(i = 0; i < dwLen; i=i+1) {
+        currentChar = lpStr[i];
+        if((currentChar >= 0x30) && (currentChar <= 0x39)) {
+            currentChar = currentChar - 0x30;
+            currentValue = currentValue * 10 + currentChar;
+        }
+    }    return currentValue;
+}
 
 static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210707_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
@@ -459,6 +492,22 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[3].bOutputEnable = true;
     } else if(strCompare("psuoff4", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[3].bOutputEnable = false;
+    } else if(strComparePrefix("psusetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
+    } else if(strComparePrefix("psusetv2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 2);
+    } else if(strComparePrefix("psusetv3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 3);
+    } else if(strComparePrefix("psusetv4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
+    } else if(strComparePrefix("psuseta1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
+    } else if(strComparePrefix("psuseta2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 2);
+    } else if(strComparePrefix("psuseta3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 3);
+    } else if(strComparePrefix("psuseta4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */

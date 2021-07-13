@@ -7,12 +7,14 @@ SRCFILES=src/controller.c \
 	src/serial.c \
 	src/sysclock.c \
 	src/adc.c \
-	src/psu.c
+	src/psu.c \
+	src/pwmout.c
 HEADFILES=src/controller.h \
 	src/serial.h \
 	src/sysclock.h \
 	src/adc.h \
-	src/psu.h
+	src/psu.h \
+	src/pwmout.h
 
 all: bin/controller.hex
 

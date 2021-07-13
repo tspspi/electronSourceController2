@@ -9,6 +9,7 @@
 #include "./sysclock.h"
 #include "./adc.h"
 #include "./psu.h"
+#include "./pwmout.h"
 
 int main() {
     #ifndef FRAMAC_SKIP
@@ -31,7 +32,7 @@ int main() {
     */
     DDRA = 0x33;    PORTA = 0x22;
     DDRC = 0xCC;    PORTC = 0x40;
-    DDRL = 0xFF;    PORTL = 0x00;
+    DDRL = 0xFF;    PORTL = 0xFF;
     DDRD = 0x80;    PORTD = 0x00;
 
     DDRB = DDRB | 0x80;
@@ -70,6 +71,7 @@ int main() {
         Initialize power supply interface
     */
     psuInit();
+    pwmoutInit();
 
     for(;;) {
         /*
