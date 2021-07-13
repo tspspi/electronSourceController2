@@ -1,5 +1,8 @@
 # Electron gun power supply and monitoring controller
 
+_Note_: This project is designed for a particular experiment so it will not
+be much of use for anyone who's not working on exactly that experiment.
+
 This is firmware for a simple electron gun controller that is controlling
 
 * Up to four FUG HCP 14-6500 high voltage power supplies (acceleration
