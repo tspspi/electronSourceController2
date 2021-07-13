@@ -70,11 +70,11 @@ parser). Numbers are transmitted as ASCII decimal numbers.
 | Estimate beam current                   | $$$BEAMA<LF>           | Calculates estimated beam current in 1/10 of microamperes                                                    |                                  |
 | Beam HV on                              | $$$BEAMHVON<LF>        | Switches beam high voltage on (slowly, performing insulation test)                                           |                                  |
 | Beam HV off                             | $$$BEAMHVOFF<LF>       | Switches beam high voltage off                                                                               |                                  |
-| Get PSU current                         | $$$PSUGETA[n]<LF>      | Gets current for power supply 1,2,3,4                                                                        | working, tested (maybe rescsale) |
-| Get PSU voltage                         | $$$PSUGETV[n]<LF>      | Gets voltage for power supply 1,2,3,4                                                                        | working, tested (maybe rescsale) |
+| Get PSU current                         | $$$PSUGETA[n]<LF>      | Gets current for power supply 1,2,3,4                                                                        | working, tested                  |
+| Get PSU voltage                         | $$$PSUGETV[n]<LF>      | Gets voltage for power supply 1,2,3,4                                                                        | working, tested                  |
 | Get PSU modes                           | $$$PSUMODE<LF>         | Gets the mode for each PSU as a sequence of 4 ASCII chars (A or V for current or voltage controled mode)     |                                  |
-| Set PSU current limit                   | $$$PSUSETA[n][mmm]<LF> | Sets the power supply current limit for one of the 4 PSUs. The limit is supplied in 1/10 of an microampere   |                                  |
-| Set PSU target voltage                  | $$$PSUSETV[n][mmm]<LF> | Sets the power supply voltage for one of the 4 PSUs. The voltage is set in V                                 |                                  |
+| Set PSU current limit                   | $$$PSUSETA[n][mmm]<LF> | Sets the power supply current limit for one of the 4 PSUs. The limit is supplied in 1/10 of an microampere   | working, tested                  |
+| Set PSU target voltage                  | $$$PSUSETV[n][mmm]<LF> | Sets the power supply voltage for one of the 4 PSUs. The voltage is set in V                                 | working, tested                  |
 | Set PSU polarity                        | $$$PSUPOL[n][p/n]<LF>  | Sets the polarity to be positive or negative                                                                 | working                          |
 | Set PSU output enable                   | $$$PSUON[n]<LF>        | Enabled the output of the given PSU                                                                          | working                          |
 | Set PSU output disable                  | $$$PSUOFF[n]<LF>       | Disabled the output of the given PSU                                                                         | working                          |
@@ -82,19 +82,3 @@ parser). Numbers are transmitted as ASCII decimal numbers.
 |                                         |                        |                                                                                                              |                                  |
 | Get filament voltage                    | $$$FILV<LF>            | Measures filament voltage (if supported)                                                                     |                                  |
 | Get filament current                    | $$$FILA<LF>            | Measures filament current (if supported)                                                                     |                                  |
-
-* High level:
-    * Beam HV on (enable / disable beam)
-        Procedure (doing an insulation test):
-            * First sets low current limit (~ 20 uA)
-            * Set voltages to 0
-            * Wait for ~ 2 secs
-            * Set output on
-            * Increases voltage slowly (~ 10 V / sec?)
-            * Check if not going into current limiting mode
-                If current limiting -> error status, turn off everything
-            * If reaching target: Set current limit high
-    * Beam HV off:
-            * All voltages set 0
-            * Output off
-    * Get estimated beam current
