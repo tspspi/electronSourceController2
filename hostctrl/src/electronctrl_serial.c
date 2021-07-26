@@ -372,31 +372,11 @@ static inline char egunSerial_ProcessingThread_HandleSerialData__RBPeek(
     struct egunSerial_Impl* lpThis,
     unsigned long int dwDistance
 ) {
-    if(dwDistance > egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) {
+    if(dwDistance >= egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) {
         return 0x00; /* Simply return a zero for out of bounds ... */
     }
     return lpThis->ringbufferIn.bData[(lpThis->ringbufferIn.dwTail + dwDistance) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE];
 }
-#if 0
-static inline enum egunError egunSerial_ProcessingThread_HandleSerialData__RBRead(
-    struct egunSerial_Impl* lpThis,
-    uint8_t* lpOut,
-    unsigned long int dwLength
-) {
-    unsigned long int i;
-
-    if(lpThis == NULL) { return egunE_InvalidParam; }
-    if((lpOut == NULL) && (dwLength != 0)) { return egunE_InvalidParam; }
-    if(dwLength > egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis)) { return egunE_InvalidParam; }
-
-    for(i = 0; i < dwLength; i=i+1) {
-        lpOut[i] = lpThis->ringbufferIn.bData[(lpThis->ringbufferIn.dwTail + i) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE];
-    }
-    lpThis->ringbufferIn.dwTail = (lpThis->ringbufferIn.dwTail + dwLength) % ELECTRONCTRL_SERIAL__RINGBUFFER_SIZE;
-
-    return egunE_Ok;
-}
-#endif
 
 static void egunSerial_ProcessingThread_HandleSerialData_MsgInRingbuffer(
     struct egunSerial_Impl* lpThis,
@@ -440,10 +420,6 @@ static void egunSerial_ProcessingThread_HandleSerialData(
             if(egunSerial_ProcessingThread_HandleSerialData__RBAvail(lpThis) < 4) { return; }
 
             /* Locate synchronization pattern */
-            if(egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,0) != '$') {
-                egunSerial_ProcessingThread_HandleSerialData__Discard(lpThis, 1);
-            }
-
             if(
                 (egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,0) == '$')
                 && (egunSerial_ProcessingThread_HandleSerialData__RBPeek(lpThis,1) == '$')
@@ -451,6 +427,9 @@ static void egunSerial_ProcessingThread_HandleSerialData(
             ) {
                 break;
             }
+
+            /* Discard first byte since the sync pattern doesn't seem to be fully present */
+            egunSerial_ProcessingThread_HandleSerialData__Discard(lpThis, 1);
         }
 
         /*
@@ -512,7 +491,7 @@ static void egunSerial_ProcessingThread_HandleSerialData(
                 #endif
                 break;
             } else if(r == 0) {
-                #ifdef DEBUG
+                #if 0
                     printf("%s:%u idle wakeup ...\n", __FILE__, __LINE__);
                 #endif
             } else {
@@ -572,7 +551,7 @@ enum egunError egunConnect_Serial(
 
 
         /* Setup serial port ... */
-        e = setInterfaceAttributes(lpNew->hSerialPort, B115200, 0);
+        e = setInterfaceAttributes(lpNew->hSerialPort, B19200, 0);
         if(e != egunE_Ok) {
             close(lpNew->hSerialPort);
             free(lpNew);
