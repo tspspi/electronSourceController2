@@ -5,7 +5,7 @@
     extern "C" {
 #endif
 
-extern uint16_t pwmoutOnCycles[8];
+extern uint16_t pwmoutOnCycles[9];
 
 void pwmoutInit();
 
@@ -16,6 +16,9 @@ void setPSUVolts(
 void setPSUMicroamps(
     uint16_t ua,
     uint8_t psu
+);
+void setFilamentVoltage(
+    uint16_t volts
 );
 
 #ifdef __cplusplus
