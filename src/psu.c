@@ -31,78 +31,153 @@ void psuUpdateMeasuredState() {
 }
 
 void psuSetOutputs() {
+    uint8_t currentPortA = PORTA;
+    uint8_t currentPortC = PORTC;
+
     uint8_t i;
 
     for(i = 0; i < 4; i=i+1) {
-        psuSetOutput(i);
+        switch(i) {
+            case 0:
+            {
+                if(psuStates[0].bOutputEnable == true) {
+                    currentPortA = currentPortA | 0x01;
+                } else {
+                    currentPortA = currentPortA & (~(0x01));
+                }
+
+                if(psuStates[0].polPolarity == psuPolarity_Positive) {
+                    currentPortA = currentPortA & (~(0x02));
+                } else {
+                    currentPortA = currentPortA | 0x02;
+                }
+                break;
+            }
+            case 1:
+            {
+                if(psuStates[1].bOutputEnable == true) {
+                    currentPortA = currentPortA | 0x10;
+                } else {
+                    currentPortA = currentPortA & (~(0x10));
+                }
+
+                if(psuStates[1].polPolarity == psuPolarity_Positive) {
+                    currentPortA = currentPortA & (~(0x20));
+                } else {
+                    currentPortA = currentPortA | 0x20;
+                }
+                break;
+            }
+            case 2:
+            {
+                if(psuStates[2].bOutputEnable == true) {
+                    currentPortC = currentPortC | 0x80;
+                } else {
+                    currentPortC = currentPortC & (~(0x80));
+                }
+
+                if(psuStates[2].polPolarity == psuPolarity_Positive) {
+                    currentPortC = currentPortC & (~(0x40));
+                } else {
+                    currentPortC = currentPortC | 0x40;
+                }
+                break;
+            }
+            case 3:
+            {
+                if(psuStates[3].bOutputEnable == true) {
+                    currentPortC = currentPortC | 0x08;
+                } else {
+                    currentPortC = currentPortC & (~(0x08));
+                }
+
+                if(psuStates[3].polPolarity == psuPolarity_Positive) {
+                    currentPortC = currentPortC & (~(0x04));
+                } else {
+                    currentPortC = currentPortC | 0x04;
+                }
+                break;
+            }
+            default:
+                return;
+        }
     }
+
+    PORTA = currentPortA;
+    PORTC = currentPortC;
 }
 
 void psuSetOutput(int psuIndex) {
+    uint8_t currentPortA = PORTA;
+    uint8_t currentPortC = PORTC;
+
     switch(psuIndex) {
         case 0:
         {
             if(psuStates[0].bOutputEnable == true) {
-                PORTA = PORTA | 0x01;
+                currentPortA = currentPortA | 0x01;
             } else {
-                PORTA = PORTA & (~(0x01));
+                currentPortA = currentPortA & (~(0x01));
             }
 
             if(psuStates[0].polPolarity == psuPolarity_Positive) {
-                PORTA = PORTA & (~(0x02));
+                currentPortA = currentPortA & (~(0x02));
             } else {
-                PORTA = PORTA | 0x02;
+                currentPortA = currentPortA | 0x02;
             }
             break;
         }
         case 1:
         {
             if(psuStates[1].bOutputEnable == true) {
-                PORTA = PORTA | 0x10;
+                currentPortA = currentPortA | 0x10;
             } else {
-                PORTA = PORTA & (~(0x10));
+                currentPortA = currentPortA & (~(0x10));
             }
 
             if(psuStates[1].polPolarity == psuPolarity_Positive) {
-                PORTA = PORTA & (~(0x20));
+                currentPortA = currentPortA & (~(0x20));
             } else {
-                PORTA = PORTA | 0x20;
+                currentPortA = currentPortA | 0x20;
             }
             break;
         }
         case 2:
         {
             if(psuStates[2].bOutputEnable == true) {
-                PORTC = PORTC | 0x80;
+                currentPortC = currentPortC | 0x80;
             } else {
-                PORTC = PORTC & (~(0x80));
+                currentPortC = currentPortC & (~(0x80));
             }
 
             if(psuStates[2].polPolarity == psuPolarity_Positive) {
-                PORTC = PORTC & (~(0x40));
+                currentPortC = currentPortC & (~(0x40));
             } else {
-                PORTC = PORTC | 0x40;
+                currentPortC = currentPortC | 0x40;
             }
             break;
         }
         case 3:
         {
             if(psuStates[3].bOutputEnable == true) {
-                PORTC = PORTC | 0x08;
+                currentPortC = currentPortC | 0x08;
             } else {
-                PORTC = PORTC & (~(0x08));
+                currentPortC = currentPortC & (~(0x08));
             }
 
             if(psuStates[3].polPolarity == psuPolarity_Positive) {
-                PORTC = PORTC & (~(0x04));
+                currentPortC = currentPortC & (~(0x04));
             } else {
-                PORTC = PORTC | 0x04;
+                currentPortC = currentPortC | 0x04;
             }
             break;
         }
         default:
             return;
     }
+
+    PORTA = currentPortA;
+    PORTC = currentPortC;
 }
 
 void psuInit() {
