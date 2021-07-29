@@ -31,7 +31,15 @@ ISR(ADC_vect) {
 
         ADMUX = (((oldMUX & 0x1F) + 1) & 0x07) | (oldMUX & 0xE0);
     #else
+        uint8_t oldMUX = ADMUX;
+        uint8_t oldADCSRB = ADCSRB;
 
+        uint8_t adcIndex = (oldMUX & 0x07) | (oldADCSRB & 0x80);
+
+        currentADC[((adcIndex + 15) + 1) & 0x0F] = ADC;
+
+        ADMUX = (((adcIndex + 15) + 1) & 0x07) | (oldMUX & 0xE0);
+        ADCSRB = (oldADCSRB & 0xF7) | (adcInit & 0x80);
     #endif
 }
 
