@@ -10,7 +10,7 @@
 #endif
 
 #ifndef SERIAL_RINGBUFFER_SIZE
-    #define SERIAL_RINGBUFFER_SIZE 256
+    #define SERIAL_RINGBUFFER_SIZE 1024
 #endif
 
 struct ringBuffer {

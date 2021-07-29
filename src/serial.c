@@ -84,6 +84,9 @@ static unsigned char ringBuffer_PeekCharN(
     if(lpBuf->dwHead == lpBuf->dwTail) {
         return 0x00;
     }
+    if(ringBuffer_AvailableN(lpBuf) <= dwDistance) {
+        return 0x00;
+    }
 
     return lpBuf->buffer[(lpBuf->dwTail + dwDistance) % SERIAL_RINGBUFFER_SIZE];
 }
@@ -102,11 +105,11 @@ static unsigned long int ringBuffer_ReadChars(
     char t;
     unsigned long int i;
 
-    for(i = 0; i < dwLen; i=i+1) {
-        if(lpBuf->dwHead == lpBuf->dwTail) {
-            return 0x00;
-        }
+    if(dwLen > ringBuffer_AvailableN(lpBuf)) {
+        return 0;
+    }
 
+    for(i = 0; i < dwLen; i=i+1) {
         t = lpBuf->buffer[lpBuf->dwTail];
         lpBuf->dwTail = (lpBuf->dwTail + 1) % SERIAL_RINGBUFFER_SIZE;
         lpOut[i] = t;
@@ -179,47 +182,50 @@ static void ringBuffer_WriteASCIIUnsignedInt(
 volatile struct ringBuffer serialRB0_TX;
 volatile struct ringBuffer serialRB0_RX;
 
+static volatile int serialRXFlag; /* RX flag is set to indicate that new data has arrived */
+
 void serialModeTX0() {
     /*
         This starts the transmitter ... other than for the RS485 half duplex
         lines it does _not_ interfer with the receiver part and would not
         interfer with an already running transmitter.
     */
-    #ifdef FRAMAC_SKIP
+    uint8_t sregOld = SREG;
+    #ifndef FRAMAC_SKIP
         cli();
     #endif
+
     UCSR0A = UCSR0A | 0x40; /* Reset TXCn bit */
     UCSR0B = UCSR0B | 0x08 | 0x20;
-    #ifdef FRAMAC_SKIP
-        sei();
+    #ifndef FRAMAC_SKIP
+        SREG = sregOld;
     #endif
 }
 void serialInit0() {
+    uint8_t sregOld = SREG;
+    #ifndef FRAMAC_SKIP
+        cli();
+    #endif
+
     ringBuffer_Init(&serialRB0_TX);
     ringBuffer_Init(&serialRB0_RX);
 
-    UBRR0   = 16; // 34;
+    serialRXFlag = 0;
+
+    UBRR0   = 103; // 16 : 115200, 103: 19200
     UCSR0A  = 0x02;
     UCSR0B  = 0x10 | 0x80; /* Enable receiver and RX interrupt */
     UCSR0C  = 0x06;
 
+    SREG = sregOld;
+
     return;
 }
-
 ISR(USART0_RX_vect) {
-    #ifndef FRAMAC_SKIP
-        cli();
-    #endif
     ringBuffer_WriteChar(&serialRB0_RX, UDR0);
-    #ifndef FRAMAC_SKIP
-        sei();
-    #endif
+    serialRXFlag = 1;
 }
 ISR(USART0_UDRE_vect) {
-    #ifndef FRAMAC_SKIP
-        cli();
-    #endif
-
     if(ringBuffer_Available(&serialRB0_TX) == true) {
         /* Shift next byte to the outside world ... */
         UDR0 = ringBuffer_ReadChar(&serialRB0_TX);
@@ -230,10 +236,6 @@ ISR(USART0_UDRE_vect) {
         */
         UCSR0B = UCSR0B & (~(0x08 | 0x20));
     }
-
-    #ifndef FRAMAC_SKIP
-        sei();
-    #endif
 }
 
 /*
@@ -327,16 +329,18 @@ static void handleSerial0Messages_CompleteMessage(
     */
     ringBuffer_discardN(&serialRB0_RX, 3); /* Skip sync pattern */
     dwLen = dwLength - 3;
-    dwDiscardBytes = dwLen;
+    dwDiscardBytes = dwLen; /* Remember how many bytes we have to skip in the end ... */
 
     /* Remove end of line for next parser ... */
-    dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB0_RX, dwLen-1) == 0x0D) ? 1 : 0);
+    dwLen = dwLen - 1; /* Remove LF */
+    dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB0_RX, dwLen-1) == 0x0D) ? 1 : 0); /* Remove CR if present */
 
 
     /* Now copy message into a local buffer to make parsing WAY easier ... */
     ringBuffer_ReadChars(&serialRB0_RX, handleSerial0Messages_StringBuffer, dwLen);
+#if 0
     ringBuffer_discardN(&serialRB0_RX, dwDiscardBytes-dwLen);
-
+#endif
     /*
         Now process that message at <handleSerial0Messages_StringBuffer, dwLen>
     */
@@ -551,31 +555,53 @@ void handleSerial0Messages() {
     unsigned long int dwMessageEnd;
 
     /*
+        Check if we received new data. It makes no sense to re-check message formats
+        in case nothing arrived.
+    */
+#if 0
+    if(serialRXFlag == 0) { return; }
+    serialRXFlag = 0;
+#endif
+    /*
         We simply check if a full message has arrived in the ringbuffer. If
         it has we will start to decode the message with the appropriate module
     */
     dwAvailableLength = ringBuffer_AvailableN(&serialRB0_RX);
+    if(dwAvailableLength < 3) { return; } /* We cannot even see a full synchronization pattern ... */
 
     /*
-        First we scan for the synchronization pattern
+        First we scan for the synchronization pattern. If the first character
+        is not found - skip over any additional bytes ...
     */
-    while((ringBuffer_PeekChar(&serialRB0_RX) != '$') && (ringBuffer_AvailableN(&serialRB0_RX) > 0)) {
-        ringBuffer_ReadChar(&serialRB0_RX); /* Skip character */
+    while((ringBuffer_PeekChar(&serialRB0_RX) != '$') && (ringBuffer_AvailableN(&serialRB0_RX) > 3)) {
+        ringBuffer_discardN(&serialRB0_RX, 1); /* Skip next character */
     }
 
-    if(ringBuffer_AvailableN(&serialRB0_RX) < 3) { return; }
+    /* If we are too short to fit the entire synchronization packet - wait for additional data to arrive */
+    if(ringBuffer_AvailableN(&serialRB0_RX) < 5) { return; }
+
+    /*
+        Discard additional bytes in case we don't see the full sync pattern and
+        as long as data is available
+    */
     while(
         (
             (ringBuffer_PeekCharN(&serialRB0_RX, 0) != '$') ||
             (ringBuffer_PeekCharN(&serialRB0_RX, 1) != '$') ||
-            (ringBuffer_PeekCharN(&serialRB0_RX, 2) != '$')
+            (ringBuffer_PeekCharN(&serialRB0_RX, 2) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB0_RX, 3) == '$')
         )
-        && (ringBuffer_AvailableN(&serialRB0_RX) > 3)
+        && (ringBuffer_AvailableN(&serialRB0_RX) > 4)
     ) {
         ringBuffer_discardN(&serialRB0_RX, 1);
     }
 
-    if(ringBuffer_AvailableN(&serialRB0_RX) < 4) { return; }
+    /*
+        If there is not enough data for a potential packet to be finished
+        leave (we still have the sync pattern at the start so we can simply
+        retry when additional data has arrived)
+    */
+    if(ringBuffer_AvailableN(&serialRB0_RX) < 5) { return; }
     dwAvailableLength = ringBuffer_AvailableN(&serialRB0_RX);
 
     /*
@@ -586,20 +612,22 @@ void handleSerial0Messages() {
     while((dwMessageEnd < dwAvailableLength) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != 0x0A) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != '$')) {
         dwMessageEnd = dwMessageEnd + 1;
     }
+    if(dwMessageEnd >= dwAvailableLength) {
+        return;
+    }
+
     if(ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) == 0x0A) {
         /* Received full message ... */
-        handleSerial0Messages_CompleteMessage(dwMessageEnd);
+        handleSerial0Messages_CompleteMessage(dwMessageEnd+1);
     }
     if(ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) == '$') {
-        /* Discard ... we do this by simply skipping the sync pattern...  */
-        ringBuffer_discardN(&serialRB0_RX, 3);
+        /* Discard the whole packet but keep the next sync pattern */
+        ringBuffer_discardN(&serialRB0_RX, dwMessageEnd);
     }
 
     /*
         In any other case ignore and continue without dropping the message ...
-        we will wait till we received the whole message (note that means
-        busy waiting in some way in this simple implementation - one could
-        set a flag later on (TODO) ...)
+        we will wait till we received the whole message
     */
     return;
 }
