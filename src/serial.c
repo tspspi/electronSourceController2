@@ -33,6 +33,17 @@ static inline uint16_t serialADC2TenthMicroampsHCP(
 ) {
     return (uint16_t)((double)(adcCounts) * 9.765625);
 }
+static inline uint16_t serialADC2MilliampsFILA(
+    uint16_t adcCounts
+) {
+    uint16_t deviation;
+    if(adcCounts < 512) {
+        deviation = 512 - adcCounts;
+    } else {
+        deviation = adcCounts - 512;
+    }
+    return (uint16_t)(((double)deviation) * 4.8828125);
+}
 
 /*
     Ringbuffer utilis
@@ -512,6 +523,20 @@ static void handleSerial0Messages_CompleteMessage(
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 3);
     } else if(strComparePrefix("psuseta4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
+    } else if(strComparePrefix("fila", 4, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint16_t a;
+        {
+            cli();
+            a = currentADC[8];
+            sei();
+        }
+        a = serialADC2MilliampsFILA(a);
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, 'f');
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
