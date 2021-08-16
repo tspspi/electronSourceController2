@@ -17,10 +17,9 @@ void setPSUMicroamps(
     uint16_t ua,
     uint8_t psu
 );
-void setFilamentVoltage(
-    uint16_t volts
+void setFilamentPWM(
+    uint16_t pwmCycles
 );
-
 #ifdef __cplusplus
     } /* extern "C" { */
 #endif
