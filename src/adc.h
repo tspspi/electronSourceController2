@@ -1,6 +1,9 @@
 #ifndef __is_included__4b28e79c_dfeb_11eb_b607_b499badf00a1
 #define __is_included__4b28e79c_dfeb_11eb_b607_b499badf00a1 1
 
+/* We require 16 channels since we also want to measure current */
+#define ADC_CHANNELS16 1
+
 #ifdef __cplusplus
     extern "C" {
 #endif
