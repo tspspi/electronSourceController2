@@ -34,16 +34,18 @@ ISR(ADC_vect) {
         uint8_t oldMUX = ADMUX;
         uint8_t oldADCSRB = ADCSRB;
 
-        uint8_t adcIndex = (oldMUX & 0x07) | (oldADCSRB & 0x80);
+        uint8_t adcIndex = (((oldMUX & 0x07) | (oldADCSRB & 0x08)) + 15) & 0x0F;
 
-        currentADC[((adcIndex + 15) + 1) & 0x0F] = ADC;
+        currentADC[adcIndex] = ADC;
 
-        ADMUX = (((adcIndex + 15) + 1) & 0x07) | (oldMUX & 0xE0);
-        ADCSRB = (oldADCSRB & 0xF7) | (adcIndex & 0x80);
+        ADMUX = ((adcIndex + 2) & 0x07) | (oldMUX & 0xE0);
+        ADCSRB = (oldADCSRB & 0xF7) | ((adcIndex + 2) & 0x08);
     #endif
 }
 
 void adcInit() {
+    unsigned long int i;
+
     uint8_t oldSREG = SREG;
     #ifndef FRAMAC_SKIP
         cli();
@@ -51,15 +53,9 @@ void adcInit() {
 
     adcCurrentMux = 0;
 
-    #ifndef ADC_CHANNELS16
-        for(unsigned long int i = 0; i < 8; i=i+1) {
-            currentADC[i] = ~0;
-        }
-    #else
-        for(unsigned long int i = 0; i < 16; i=i+1) {
-            currentADC[i] = ~0;
-        }
-    #endif
+    for(i = 0; i < sizeof(currentADC) / sizeof(uint16_t); i=i+1) {
+        currentADC[i] = ~0;
+    }
 
     PRR0 = PRR0 & ~(0x01); /* Disable power saving features for ADC */
     ADMUX = 0x40; /* AVCC reference voltage, MUX 0, right aligned */
