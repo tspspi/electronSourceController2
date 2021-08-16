@@ -225,6 +225,25 @@ static enum egunError egunSerial__electronGun_GetCurrentCurrent(
         return egunE_Ok;
     }
 }
+static char egunSerial__electronGun_GetFilamentCurrent__MessageFmt[] = "$$$fila\n";
+static enum egunError egunSerial__electronGun_GetFilamentCurrent(
+    struct electronGun* lpSelf
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    r = write(lpThis->hSerialPort, egunSerial__electronGun_GetFilamentCurrent__MessageFmt, strlen(egunSerial__electronGun_GetFilamentCurrent__MessageFmt));
+    if(r != strlen(egunSerial__electronGun_GetFilamentCurrent__MessageFmt)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
 
 static char egunSerial__electronGun_SetPSUPolarity__MessageFmt[] = "$$$psupol%u%c\n";
 static enum egunError egunSerial__electronGun_SetPSUPolarity(
@@ -337,7 +356,9 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__electronGun_SetPSUEnabled,
 
     &egunSerial__electronGun_SetVoltage,
-    &egunSerial__electronGun_SetCurrent
+    &egunSerial__electronGun_SetCurrent,
+
+    &egunSerial__electronGun_GetFilamentCurrent
 };
 
 
