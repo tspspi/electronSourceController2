@@ -56,6 +56,7 @@ This is firmware for a simple electron gun controller that is controlling
 | A6  | PSU4: Voltage sense                 | Analog in                 | PF6                   |
 | A7  | PSU4: Current sense                 | Analog in                 | PF7                   |
 | 38  | Filament power supply (230V side)   | Digital out               | PD7                   |
+| A8  | Current sensor for filament         | Analog in                 | PK0                   |
 
 ## Protocol
 
