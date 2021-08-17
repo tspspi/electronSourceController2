@@ -571,6 +571,11 @@ static void handleSerial0Messages_CompleteMessage(
         setFilamentPWM(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
     } else if(strCompare("insul", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_InsulationTest();
+    } else if(strCompare("beamhvoff", 9, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].bOutputEnable = false;
+        psuStates[1].bOutputEnable = false;
+        psuStates[2].bOutputEnable = false;
+        psuStates[3].bOutputEnable = false;
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
