@@ -145,6 +145,9 @@ void setFilamentPWM(
     /* Setting in 128 steps from 0-12V -> ~ 0.09V resolution */
     pwmoutOnCycles[8] = pwmCycles & 0x7F;
 }
+uint16_t getFilamentPWM() {
+    return pwmoutOnCycles[8];
+}
 
 void setFilamentOn(
     bool bOn

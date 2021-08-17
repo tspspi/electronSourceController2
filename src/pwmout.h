@@ -28,6 +28,7 @@ void setPSUMicroamps(
 void setFilamentPWM(
     uint16_t pwmCycles
 );
+uint16_t getFilamentPWM();
 void setFilamentOn(
     bool bOn
 );

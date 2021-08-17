@@ -576,6 +576,8 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[1].bOutputEnable = false;
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
+    } else if(strCompare("beamon", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        rampStart_BeamOn();
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */

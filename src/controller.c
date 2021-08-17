@@ -39,6 +39,32 @@ void rampStart_InsulationTest() {
     rampMode.clkLastTick = micros();
 }
 
+void rampStart_BeamOn() {
+    unsigned long int i;
+    for(i = 1; i < 5; i=i+1) {
+        psuStates[i-1].bOutputEnable = false;
+        setPSUVolts(0, i);
+        setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
+    }
+    setFilamentOn(false);
+
+    rampMode.mode = controllerRampMode__BeamOn;
+    rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
+    rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
+    rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
+    rampMode.vTargets[3] = 0;
+    rampMode.aTargetFilament = 0x1F >> 1; // getFilamentPWM(); /* We use the currently selected filament current as target */
+
+    rampMode.vCurrent[0] = 0;
+    rampMode.vCurrent[1] = 0;
+    rampMode.vCurrent[2] = 0;
+    rampMode.vCurrent[3] = 0;
+    rampMode.filamentCurrent = 0;
+    rampMode.clkLastTick = micros();
+
+    setFilamentPWM(0);
+}
+
 static void rampInsulationError() {
     /*
         Write message
@@ -126,7 +152,33 @@ static void handleRamp() {
                 psuStates[i].bOutputEnable = false;
             }
             rampMessage_InsulationTestSuccess();
+            return;
         }
+
+        /*
+            In case of beam on mode the next step is to increase filament current
+            SLOWLY
+        */
+        if(rampMode.aTargetFilament != rampMode.filamentCurrent) {
+            if(timeElapsed < CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS) { return; }
+
+            if(rampMode.filamentCurrent == 0) {
+                setFilamentOn(true);
+                for(i = 0; i < 4; i=i+1) {
+                    setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM, i+1);
+                }
+            }
+
+            rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
+            setFilamentPWM(rampMode.filamentCurrent);
+            rampMode.clkLastTick = curTime;
+            return;
+        }
+
+        /*
+            Ramp done for beam on ...
+        */
+        rampMode.mode = controllerRampMode__None;
     }
 }
 

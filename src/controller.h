@@ -28,6 +28,17 @@
     #define CONTROLLER_RAMP_VOLTAGE_INITDURATION 10000000
 #endif
 
+#ifndef CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM
+    #define CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM 900
+#endif
+
+#ifndef CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS
+    #define CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS 2500000
+#endif
+#ifndef CONTROLLER_RAMP_FILCURRENT_STEPSIZE
+    #define CONTROLLER_RAMP_FILCURRENT_STEPSIZE 1
+#endif
+
 enum controllerRampMode {
     controllerRampMode__None,
     controllerRampMode__BeamOn,
@@ -62,5 +73,6 @@ struct rampMode {
 };
 
 void rampStart_InsulationTest();
+void rampStart_BeamOn();
 
 #endif /* #ifndef __is_included__d81475f8_df0f_11eb_ba7e_b499badf00a1 */
