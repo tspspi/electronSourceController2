@@ -446,6 +446,25 @@ static enum egunError egunSerial__electronGun_InsulationTest(
     }
 }
 
+static char egunSerial__electronGun_BeamOn_Message[] = "$$$beamon\n";
+static enum egunError egunSerial__electronGun_BeamOn(
+    struct electronGun* lpSelf
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    r = write(lpThis->hSerialPort, egunSerial__electronGun_BeamOn_Message, strlen(egunSerial__electronGun_BeamOn_Message));
+    if(r != strlen(egunSerial__electronGun_BeamOn_Message)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
+
 
 struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__Release,
@@ -466,7 +485,8 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__electronGun_SetFilamentCurrent,
     &egunSerial__electronGun_SetFilamentOn,
 
-    &egunSerial__electronGun_InsulationTest
+    &egunSerial__electronGun_InsulationTest,
+    &egunSerial__electronGun_BeamOn
 };
 
 

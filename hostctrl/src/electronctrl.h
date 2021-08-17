@@ -85,6 +85,10 @@ typedef enum egunError (*electronGun_SetFilamentOn)(
 typedef enum egunError (*electronGun_InsulationTest)(
     struct electronGun* lpSelf
 );
+typedef enum egunError (*electronGun_BeamOn)(
+    struct electronGun* lpSelf
+);
+
 
 
 struct electronGun_VTBL {
@@ -103,6 +107,7 @@ struct electronGun_VTBL {
     electronGun_SetFilamentOn       setFilamentOn;
 
     electronGun_InsulationTest      insulationTest;
+    electronGun_BeamOn              beamOn;
 };
 
 struct electronGun {
