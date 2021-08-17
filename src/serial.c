@@ -333,7 +333,9 @@ static void handleSerial0Messages_CompleteMessage(
     unsigned long int dwLength
 ) {
     unsigned long int dwLen;
+#if 0
     unsigned long int dwDiscardBytes;
+#endif
 
     /*
         We have received a complete message - now we will remove the sync
@@ -341,7 +343,9 @@ static void handleSerial0Messages_CompleteMessage(
     */
     ringBuffer_discardN(&serialRB0_RX, 3); /* Skip sync pattern */
     dwLen = dwLength - 3;
+#if 0
     dwDiscardBytes = dwLen; /* Remember how many bytes we have to skip in the end ... */
+#endif
 
     /* Remove end of line for next parser ... */
     dwLen = dwLen - 1; /* Remove LF */
@@ -565,6 +569,8 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setfila", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
         setFilamentPWM(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
+    } else if(strCompare("insul", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        rampStart_InsulationTest();
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
@@ -683,4 +689,41 @@ void handleSerial0Messages() {
         we will wait till we received the whole message
     */
     return;
+}
+
+
+void rampMessage_ReportVoltages() {
+    unsigned long int i;
+    for(i = 0; i < 4; i=i+1) {
+        uint16_t v;
+        {
+            cli();
+            v = currentADC[i*2];
+            sei();
+        }
+        v = serialADC2VoltsHCP(v);
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x31+i);
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+    }
+    serialModeTX0();
+}
+
+static unsigned char rampMessage_InsulationTestSuccess__Message[] = "$$$insulok\n";
+void rampMessage_InsulationTestSuccess() {
+    ringBuffer_WriteChars(&serialRB0_TX, rampMessage_InsulationTestSuccess__Message, sizeof(rampMessage_InsulationTestSuccess__Message)-1);
+    serialModeTX0();
+}
+
+static unsigned char rampMessage_InsulationTestFailure__Message[] = "$$$insulfailed:";
+void rampMessage_InsulationTestFailure() {
+    unsigned long int i;
+    ringBuffer_WriteChars(&serialRB0_TX, rampMessage_InsulationTestFailure__Message, sizeof(rampMessage_InsulationTestFailure__Message)-1);
+    for(i = 0; i < 4; i=i+1) {
+        ringBuffer_WriteChar(&serialRB0_TX, ((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) ? 'F' : '-');
+    }
+    ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+    serialModeTX0();
 }

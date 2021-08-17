@@ -3,6 +3,7 @@
 #include <math.h>
 #include <util/twi.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include "./serial.h"
 #include "./controller.h"
@@ -10,6 +11,126 @@
 #include "./adc.h"
 #include "./psu.h"
 #include "./pwmout.h"
+
+struct rampMode rampMode;
+
+void rampStart_InsulationTest() {
+    unsigned long int i;
+    for(i = 1; i < 5; i=i+1) {
+        psuStates[i-1].bOutputEnable = false;
+        setPSUVolts(0, i);
+        setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
+    }
+    setFilamentOn(false);
+    setFilamentPWM(0);
+
+    rampMode.mode = controllerRampMode__InsulationTest;
+    rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
+    rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
+    rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
+    rampMode.vTargets[3] = 0;
+    rampMode.aTargetFilament = 0;
+
+    rampMode.vCurrent[0] = 0;
+    rampMode.vCurrent[1] = 0;
+    rampMode.vCurrent[2] = 0;
+    rampMode.vCurrent[3] = 0;
+    rampMode.filamentCurrent = 0;
+    rampMode.clkLastTick = micros();
+}
+
+static void rampInsulationError() {
+    /*
+        Write message
+    */
+    rampMessage_InsulationTestFailure();
+
+    /*
+        Disable everything
+    */
+    psuStates[0].bOutputEnable = false;
+    psuStates[1].bOutputEnable = false;
+    psuStates[2].bOutputEnable = false;
+    psuStates[3].bOutputEnable = false;
+    setFilamentOn(false);
+
+    /*
+        Stop ramp
+    */
+    rampMode.mode = controllerRampMode__None;
+}
+
+static void handleRamp() {
+    unsigned long int curTime = micros();
+    unsigned long int i;
+    unsigned long int timeElapsed;
+
+    if(curTime > rampMode.clkLastTick) {
+        timeElapsed = curTime - rampMode.clkLastTick;
+    } else {
+        timeElapsed = (ULONG_MAX - rampMode.clkLastTick) + curTime;
+    }
+
+    if(rampMode.mode == controllerRampMode__None) { return; }
+
+    /*
+        Check if we should do anything with voltages on next tick ...
+    */
+    if((rampMode.mode == controllerRampMode__BeamOn) || (rampMode.mode == controllerRampMode__InsulationTest)) {
+        if((rampMode.vCurrent[0] == 0) && (rampMode.vCurrent[1] == 0) && (rampMode.vCurrent[2] == 0) && (rampMode.vCurrent[3] == 0)) {
+            /* This is the initial delay ... */
+            if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_INITDURATION) { return; }
+
+            /* We start the sequence by setting voltage and PSU enable ... */
+            for(i = 0; i < 4; i=i+1) {
+                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
+                setPSUVolts(rampMode.vCurrent[i], i+1);
+                psuStates[i].bOutputEnable = (rampMode.vTargets[i] != 0) ? true : false;
+                rampMessage_ReportVoltages();
+            }
+            rampMode.clkLastTick = curTime;
+            return;
+        }
+        if((rampMode.vCurrent[0] != rampMode.vTargets[0]) || (rampMode.vCurrent[1] != rampMode.vTargets[1]) || (rampMode.vCurrent[2] != rampMode.vTargets[2]) || (rampMode.vCurrent[3] != rampMode.vTargets[3])) {
+            if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_STEPDURATIONMILLIS) { return; }
+
+            /*
+                Check if any PSU is in CC mode ...
+                We only check on ticks since during phase of increasing voltage current limiting may be triggered
+            */
+
+            for(i = 0; i < 4; i=i+1) {
+                if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
+                    /* Insulation fault ... abort ... */
+                    rampInsulationError();
+                    return;
+                }
+            }
+
+            for(i = 0; i < 4; i=i+1) {
+                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
+                setPSUVolts(rampMode.vCurrent[i], i+1);
+                rampMessage_ReportVoltages();
+            }
+            rampMode.clkLastTick = curTime;
+            return;
+        }
+
+        /*
+            In case voltages have reached the target and finished the insulation test ...
+        */
+        if(rampMode.mode == controllerRampMode__InsulationTest) {
+            rampMode.mode = controllerRampMode__None;
+            for(i = 0; i < 4; i=i+1) {
+                setPSUVolts(0, i+1);
+                psuStates[i].bOutputEnable = false;
+            }
+            rampMessage_InsulationTestSuccess();
+        }
+    }
+}
+
+
 
 int main() {
     #ifndef FRAMAC_SKIP
@@ -73,6 +194,11 @@ int main() {
     psuInit();
     pwmoutInit();
 
+    /*
+        Disable ramping on power on
+    */
+    rampMode.mode = controllerRampMode__None;
+
     for(;;) {
         /*
             This is the main application loop. It works in a hybrid synchronous
@@ -85,5 +211,7 @@ int main() {
 
         psuUpdateMeasuredState();
         psuSetOutputs();
+
+        handleRamp();
     }
 }

@@ -24,4 +24,10 @@ void serialInit0();
 
 void handleSerial0Messages();
 
+void rampMessage_ReportVoltages();
+
+void rampMessage_InsulationTestSuccess();
+void rampMessage_InsulationTestFailure();
+
+
 #endif /* __is_included__fd8eb7f9_df0f_11eb_ba7e_b499badf00a1 */
