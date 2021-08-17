@@ -327,6 +327,7 @@ static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_202
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
+static unsigned char handleSerial0Messages_Response__PSUSTATE_Part[] = "$$$psustate";
 
 static void handleSerial0Messages_CompleteMessage(
     unsigned long int dwLength
@@ -517,6 +518,20 @@ static void handleSerial0Messages_CompleteMessage(
         setFilamentOn(true);
     } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setFilamentOn(false);
+    } else if(strCompare("psumode", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        unsigned long int iPSU;
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__PSUSTATE_Part, sizeof(handleSerial0Messages_Response__PSUSTATE_Part)-1);
+        for(iPSU = 0; iPSU < 4; iPSU = iPSU + 1) {
+            if(psuStates[iPSU].bOutputEnable != true) {
+                ringBuffer_WriteChar(&serialRB0_TX, '-');
+            } else if(psuStates[iPSU].limitMode == psuLimit_Current) {
+                ringBuffer_WriteChar(&serialRB0_TX, 'C');
+            } else {
+                ringBuffer_WriteChar(&serialRB0_TX, 'V');
+            }
+        }
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+        serialModeTX0();
     } else if(strComparePrefix("psusetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
     } else if(strComparePrefix("psusetv2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
