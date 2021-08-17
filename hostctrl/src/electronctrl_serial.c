@@ -346,6 +346,51 @@ static enum egunError egunSerial__electronGun_SetCurrent(
     }
 }
 
+static char egunSerial__electronGun_SetFilamentCurrent__MessageFmt[] = "$$$setfila%u\n";
+static enum egunError egunSerial__electronGun_SetFilamentCurrent(
+    struct electronGun* lpSelf,
+    uint16_t wCurrent
+) {
+    struct egunSerial_Impl* lpThis;
+    char bCommand[32];
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    /* if(wCurrent > 130) { return egunE_InvalidParam; } */
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+    sprintf(bCommand, egunSerial__electronGun_SetFilamentCurrent__MessageFmt, wCurrent);
+    r = write(lpThis->hSerialPort, bCommand, strlen(bCommand));
+    if(r != strlen(bCommand)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
+static char egunSerial__electronGun_SetFilamentOn__OnMsg[]  = "$$$filon\n";
+static char egunSerial__electronGun_SetFilamentOn__OffMsg[] = "$$$filoff\n";
+static enum egunError egunSerial__electronGun_SetFilamentOn(
+    struct electronGun* lpSelf,
+    bool bOn
+) {
+    struct egunSerial_Impl* lpThis;
+    char* lpCmd;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+
+    lpCmd = (bOn != false) ? egunSerial__electronGun_SetFilamentOn__OnMsg : egunSerial__electronGun_SetFilamentOn__OffMsg;
+
+    r = write(lpThis->hSerialPort, lpCmd, strlen(lpCmd));
+    if(r != strlen(lpCmd)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
 
 struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__Release,
@@ -358,7 +403,9 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__electronGun_SetVoltage,
     &egunSerial__electronGun_SetCurrent,
 
-    &egunSerial__electronGun_GetFilamentCurrent
+    &egunSerial__electronGun_GetFilamentCurrent,
+    &egunSerial__electronGun_SetFilamentCurrent,
+    &egunSerial__electronGun_SetFilamentOn
 };
 
 

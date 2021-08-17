@@ -67,6 +67,14 @@ typedef enum egunError (*electronGun_SetCurrent)(
 typedef enum egunError (*electronGun_GetFilamentCurrent)(
     struct electronGun* lpSelf
 );
+typedef enum egunError (*electronGun_SetFilamentCurrent)(
+    struct electronGun* lpSelf,
+    uint16_t wCurrent
+);
+typedef enum egunError (*electronGun_SetFilamentOn)(
+    struct electronGun* lpSelf,
+    bool bOn
+);
 
 
 struct electronGun_VTBL {
@@ -79,6 +87,8 @@ struct electronGun_VTBL {
     electronGun_SetVoltage          setVoltage;
     electronGun_SetCurrent          setCurrent;
     electronGun_GetFilamentCurrent  getFilamentCurrent;
+    electronGun_SetFilamentCurrent  setFilamentCurrent;
+    electronGun_SetFilamentOn       setFilamentOn;
 };
 
 struct electronGun {
