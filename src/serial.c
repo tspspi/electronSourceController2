@@ -547,6 +547,9 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
+    } else if(strComparePrefix("setfila", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
+        setFilamentPWM(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
