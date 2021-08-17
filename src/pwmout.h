@@ -1,6 +1,14 @@
 #ifndef __is_included__caec5c77_e2e8_11eb_a58f_b499badf00a1
 #define __is_included__caec5c77_e2e8_11eb_a58f_b499badf00a1 1
 
+#ifndef __cplusplus
+    #ifndef true
+        #define true 1
+        #define false 0
+        typedef unsigned char bool;
+    #endif
+#endif
+
 #ifdef __cplusplus
     extern "C" {
 #endif
@@ -19,6 +27,9 @@ void setPSUMicroamps(
 );
 void setFilamentPWM(
     uint16_t pwmCycles
+);
+void setFilamentOn(
+    bool bOn
 );
 #ifdef __cplusplus
     } /* extern "C" { */

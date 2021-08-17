@@ -507,6 +507,15 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[3].bOutputEnable = true;
     } else if(strCompare("psuoff4", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[3].bOutputEnable = false;
+    } else if(strCompare("off", 3, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        psuStates[0].bOutputEnable = false;
+        psuStates[1].bOutputEnable = false;
+        psuStates[2].bOutputEnable = false;
+        psuStates[3].bOutputEnable = false;
+    } else if(strCompare("filon", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setFilamentOn(true);
+    } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setFilamentOn(false);
     } else if(strComparePrefix("psusetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
     } else if(strComparePrefix("psusetv2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {

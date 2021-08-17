@@ -34,6 +34,7 @@
 
 uint16_t pwmoutOnCycles[9];
 static uint16_t pwmoutCurrentCycles[9];
+static bool bFilamentOn;
 
 ISR(TIMER2_COMPA_vect) {
     uint8_t i;
@@ -68,7 +69,7 @@ ISR(TIMER2_COMPA_vect) {
     }
 
     pwmoutCurrentCycles[8] = (pwmoutCurrentCycles[8] + 1) & 0x7F;
-    if(pwmoutCurrentCycles[8] >= pwmoutOnCycles[8]) {
+    if((pwmoutCurrentCycles[8] >= pwmoutOnCycles[8]) || (bFilamentOn == false)) {
         PORTD = PORTD & ~(0x80);
     } else {
         PORTD = PORTD | 0x80;
@@ -87,6 +88,8 @@ void pwmoutInit() {
         pwmoutCurrentCycles[i] = 0;
         pwmoutOnCycles[i] = 0;
     }
+
+    bFilamentOn = false;
 
     TCNT2   = 0;
     TCCR2A  = 0x02;      /* CTC mode (up to OCR2A, disable OCR output pins) */
@@ -141,6 +144,12 @@ void setFilamentPWM(
 ) {
     /* Setting in 128 steps from 0-12V -> ~ 0.09V resolution */
     pwmoutOnCycles[8] = pwmCycles & 0x7F;
+}
+
+void setFilamentOn(
+    bool bOn
+) {
+    bFilamentOn = bOn;
 }
 
 #ifdef __cplusplus
