@@ -323,7 +323,7 @@ static uint32_t strASCIIToDecimal(
     }    return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210707_001\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210817_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
