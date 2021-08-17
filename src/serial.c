@@ -512,6 +512,7 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[1].bOutputEnable = false;
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
+        setFilamentOn(false);
     } else if(strCompare("filon", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setFilamentOn(true);
     } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
