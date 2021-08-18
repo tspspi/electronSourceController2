@@ -323,7 +323,7 @@ static uint32_t strASCIIToDecimal(
     }    return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210817_001\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210818_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -482,16 +482,22 @@ static void handleSerial0Messages_CompleteMessage(
         serialModeTX0();
     } else if(strCompare("psupol1p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[0].polPolarity = psuPolarity_Positive;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol1n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[0].polPolarity = psuPolarity_Negative;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol2p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[1].polPolarity = psuPolarity_Positive;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol2n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[1].polPolarity = psuPolarity_Negative;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol3p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[2].polPolarity = psuPolarity_Positive;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol3n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[2].polPolarity = psuPolarity_Negative;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psupol4p", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[3].polPolarity = psuPolarity_Positive;
     } else if(strCompare("psupol4n", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -500,14 +506,17 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[0].bOutputEnable = true;
     } else if(strCompare("psuoff1", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[0].bOutputEnable = false;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psuon2", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[1].bOutputEnable = true;
     } else if(strCompare("psuoff2", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[1].bOutputEnable = false;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psuon3", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[2].bOutputEnable = true;
     } else if(strCompare("psuoff3", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[2].bOutputEnable = false;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psuon4", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         psuStates[3].bOutputEnable = true;
     } else if(strCompare("psuoff4", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -518,10 +527,13 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
         setFilamentOn(false);
+        rampMode.mode = controllerRampMode__None;
+        statusMessageOff();
     } else if(strCompare("filon", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setFilamentOn(true);
     } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setFilamentOn(false);
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psumode", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         unsigned long int iPSU;
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__PSUSTATE_Part, sizeof(handleSerial0Messages_Response__PSUSTATE_Part)-1);
@@ -538,18 +550,24 @@ static void handleSerial0Messages_CompleteMessage(
         serialModeTX0();
     } else if(strComparePrefix("psusetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psusetv2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 2);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psusetv3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 3);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psusetv4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUVolts(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
     } else if(strComparePrefix("psuseta1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 1);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psuseta2", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 2);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psuseta3", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 3);
+        rampMode.mode = controllerRampMode__None;
     } else if(strComparePrefix("psuseta4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
     } else if(strComparePrefix("fila", 4, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -569,6 +587,7 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setfila", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
         setFilamentPWM(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("insul", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_InsulationTest();
     } else if(strCompare("beamhvoff", 9, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -576,6 +595,7 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[1].bOutputEnable = false;
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
+        rampMode.mode = controllerRampMode__None;
     } else if(strCompare("beamon", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_BeamOn();
 #ifdef DEBUG
@@ -718,6 +738,22 @@ void rampMessage_ReportVoltages() {
     serialModeTX0();
 }
 
+static unsigned char rampMessage_ReportFilaCurrents__Message1[] = "$$$filseta:";
+static unsigned char rampMessage_ReportFilaCurrents__MessageDisabled[] = "disabled\n";
+// static unsigned char rampMessage_ReportFilaCurrents__Message2[] = "$$$fila:";
+void rampMessage_ReportFilaCurrents() {
+    if(isFilamentOn() != false) {
+        uint16_t a = getFilamentPWM();
+        ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+    } else {
+        ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
+        ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__MessageDisabled, sizeof(rampMessage_ReportFilaCurrents__MessageDisabled)-1);
+    }
+    serialModeTX0();
+}
+
 static unsigned char rampMessage_InsulationTestSuccess__Message[] = "$$$insulok\n";
 void rampMessage_InsulationTestSuccess() {
     ringBuffer_WriteChars(&serialRB0_TX, rampMessage_InsulationTestSuccess__Message, sizeof(rampMessage_InsulationTestSuccess__Message)-1);
@@ -733,4 +769,9 @@ void rampMessage_InsulationTestFailure() {
     }
     ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
     serialModeTX0();
+}
+
+static unsigned char statusMessageOff_Msg[] = "$$$off\n";
+void statusMessageOff() {
+    ringBuffer_WriteChars(&serialRB0_TX, statusMessageOff_Msg, sizeof(statusMessageOff_Msg)-1);
 }

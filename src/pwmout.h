@@ -32,6 +32,8 @@ uint16_t getFilamentPWM();
 void setFilamentOn(
     bool bOn
 );
+bool isFilamentOn();
+
 #ifdef __cplusplus
     } /* extern "C" { */
 #endif

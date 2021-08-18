@@ -8,6 +8,7 @@
 
 #include "./sysclock.h"
 #include "./pwmout.h"
+#include "./serial.h"
 
 #ifdef __cplusplus
     extern "C" {
@@ -144,6 +145,7 @@ void setFilamentPWM(
 ) {
     /* Setting in 128 steps from 0-12V -> ~ 0.09V resolution */
     pwmoutOnCycles[8] = pwmCycles & 0x7F;
+    rampMessage_ReportFilaCurrents();
 }
 uint16_t getFilamentPWM() {
     return pwmoutOnCycles[8];
@@ -153,6 +155,9 @@ void setFilamentOn(
     bool bOn
 ) {
     bFilamentOn = bOn;
+}
+bool isFilamentOn() {
+    return bFilamentOn;
 }
 
 #ifdef __cplusplus

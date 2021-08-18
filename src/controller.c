@@ -53,7 +53,7 @@ void rampStart_BeamOn() {
     rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
     rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
     rampMode.vTargets[3] = 0;
-    rampMode.aTargetFilament = 0x1F >> 1; // getFilamentPWM(); /* We use the currently selected filament current as target */
+    rampMode.aTargetFilament = getFilamentPWM(); /* We use the currently selected filament current as target */
 
     rampMode.vCurrent[0] = 0;
     rampMode.vCurrent[1] = 0;
@@ -120,18 +120,22 @@ static void handleRamp() {
         if((rampMode.vCurrent[0] != rampMode.vTargets[0]) || (rampMode.vCurrent[1] != rampMode.vTargets[1]) || (rampMode.vCurrent[2] != rampMode.vTargets[2]) || (rampMode.vCurrent[3] != rampMode.vTargets[3])) {
             if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_STEPDURATIONMILLIS) { return; }
 
-            /*
-                Check if any PSU is in CC mode ...
-                We only check on ticks since during phase of increasing voltage current limiting may be triggered
-            */
+            #if 0
+                /*
+                    Check if any PSU is in CC mode ...
+                    We only check on ticks since during phase of increasing voltage current limiting may be triggered
 
-            for(i = 0; i < 4; i=i+1) {
-                if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
-                    /* Insulation fault ... abort ... */
-                    rampInsulationError();
-                    return;
+                    Note: Moved into handler that is always active for all PSUs
+                */
+
+                for(i = 0; i < 4; i=i+1) {
+                    if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
+                        /* Insulation fault ... abort ... */
+                        rampInsulationError();
+                        return;
+                    }
                 }
-            }
+            #endif
 
             for(i = 0; i < 4; i=i+1) {
                 rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
@@ -182,6 +186,22 @@ static void handleRamp() {
     }
 }
 
+static void handleOvercurrentDetection() {
+    unsigned long int i;
+
+    /*
+        Periodically check if any of the PSUs went into current limiting
+        mode which is usually an indication for an insulation fault - in this
+        case disable everything and signal fault ...
+    */
+
+    for(i = 0; i < 4; i=i+1) {
+        if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
+            rampInsulationError();
+            return;
+        }
+    }
+}
 
 
 int main() {
@@ -265,5 +285,6 @@ int main() {
         psuSetOutputs();
 
         handleRamp();
+        handleOvercurrentDetection();
     }
 }
