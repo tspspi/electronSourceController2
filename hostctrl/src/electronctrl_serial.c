@@ -393,7 +393,7 @@ static enum egunError egunSerial__electronGun_SetFilamentCurrent(
     int r;
 
     if(lpSelf == NULL) { return egunE_InvalidParam; }
-    /* if(wCurrent > 130) { return egunE_InvalidParam; } */
+    /* if(wCurrent > 0x7F) { return egunE_InvalidParam; } */
 
     lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
     sprintf(bCommand, egunSerial__electronGun_SetFilamentCurrent__MessageFmt, wCurrent);
