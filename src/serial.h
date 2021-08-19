@@ -29,6 +29,7 @@ void rampMessage_ReportFilaCurrents();
 
 void rampMessage_InsulationTestSuccess();
 void rampMessage_InsulationTestFailure();
+void rampMessage_BeamOnSuccess();
 
 void statusMessageOff();
 

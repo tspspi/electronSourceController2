@@ -103,6 +103,26 @@ static void handleRamp() {
         Check if we should do anything with voltages on next tick ...
     */
     if((rampMode.mode == controllerRampMode__BeamOn) || (rampMode.mode == controllerRampMode__InsulationTest)) {
+        if((rampMode.aTargetFilament != rampMode.filamentCurrent) && (rampMode.mode == controllerRampMode__BeamOn)) {
+            if(timeElapsed < CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS) { return; }
+
+            if(rampMode.filamentCurrent == 0) {
+                setFilamentOn(true);
+                for(i = 0; i < 4; i=i+1) {
+                    setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM, i+1);
+                }
+            }
+
+            rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
+            setFilamentPWM(rampMode.filamentCurrent);
+            rampMode.clkLastTick = curTime;
+            return;
+        }
+
+        /*
+            In case of beam on mode the next step is to increase filament current
+            SLOWLY
+        */
         if((rampMode.vCurrent[0] == 0) && (rampMode.vCurrent[1] == 0) && (rampMode.vCurrent[2] == 0) && (rampMode.vCurrent[3] == 0)) {
             /* This is the initial delay ... */
             if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_INITDURATION) { return; }
@@ -157,32 +177,14 @@ static void handleRamp() {
             }
             rampMessage_InsulationTestSuccess();
             return;
-        }
-
-        /*
-            In case of beam on mode the next step is to increase filament current
-            SLOWLY
-        */
-        if(rampMode.aTargetFilament != rampMode.filamentCurrent) {
-            if(timeElapsed < CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS) { return; }
-
-            if(rampMode.filamentCurrent == 0) {
-                setFilamentOn(true);
-                for(i = 0; i < 4; i=i+1) {
-                    setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM, i+1);
-                }
-            }
-
-            rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
-            setFilamentPWM(rampMode.filamentCurrent);
-            rampMode.clkLastTick = curTime;
+        } else {
+            /*
+                Rampd one for beam on
+            */
+            rampMode.mode = controllerRampMode__None;
+            rampMessage_BeamOnSuccess();
             return;
         }
-
-        /*
-            Ramp done for beam on ...
-        */
-        rampMode.mode = controllerRampMode__None;
     }
 }
 

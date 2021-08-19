@@ -323,7 +323,7 @@ static uint32_t strASCIIToDecimal(
     }    return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210818_001\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210819_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -759,6 +759,13 @@ void rampMessage_InsulationTestSuccess() {
     ringBuffer_WriteChars(&serialRB0_TX, rampMessage_InsulationTestSuccess__Message, sizeof(rampMessage_InsulationTestSuccess__Message)-1);
     serialModeTX0();
 }
+
+static unsigned char rampMessage_BeamOnSuccess__Message[] = "$$$beamon\n";
+void rampMessage_BeamOnSuccess() {
+    ringBuffer_WriteChars(&serialRB0_TX, rampMessage_BeamOnSuccess__Message, sizeof(rampMessage_BeamOnSuccess__Message)-1);
+    serialModeTX0();
+}
+
 
 static unsigned char rampMessage_InsulationTestFailure__Message[] = "$$$insulfailed:";
 void rampMessage_InsulationTestFailure() {
