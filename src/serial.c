@@ -746,6 +746,14 @@ void rampMessage_ReportFilaCurrents() {
         uint16_t a = getFilamentPWM();
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
+        {
+            cli();
+            a = currentADC[8];
+            sei();
+        }
+        a = serialADC2MilliampsFILA(a);
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
     } else {
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
