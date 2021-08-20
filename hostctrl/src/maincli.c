@@ -71,7 +71,6 @@ enum egunCliCommand {
 int main(int argc, char* argv[]) {
     struct electronGun* lpEgun;
     enum egunError e;
-    enum egunCliCommand cmd = egunCliCommand_ID;
     unsigned long int dwTemp;
 
     char* lpPort = NULL;
@@ -260,8 +259,8 @@ int main(int argc, char* argv[]) {
                     return 1;
                 }
                 i = i + 1;
-            } else if(strcmp(argv[i], "filgeta") != 0) {
-            } else if(strcmp(argv[i], "filseta") != 0) {
+            } else if(strcmp(argv[i], "filgeta") == 0) {
+            } else if(strcmp(argv[i], "filseta") == 0) {
                 if(i == argc-1) {
                     printf("Missing filament current after filseta\n");
                     return 1;
@@ -270,11 +269,12 @@ int main(int argc, char* argv[]) {
                     printf("Invalid current %s after filseta\n", argv[i+1]);
                     return 1;
                 }
-            } else if(strcmp(argv[i], "filon") != 0) {
-            } else if(strcmp(argv[i], "filoff") != 0) {
-            } else if(strcmp(argv[i], "insul") != 0) {
-            } else if(strcmp(argv[i], "beamon") != 0) {
-            } else if(strcmp(argv[i], "sleep") != 0) {
+                i = i + 1;
+            } else if(strcmp(argv[i], "filon") == 0) {
+            } else if(strcmp(argv[i], "filoff") == 0) {
+            } else if(strcmp(argv[i], "insul") == 0) {
+            } else if(strcmp(argv[i], "beamon") == 0) {
+            } else if(strcmp(argv[i], "sleep") == 0) {
                 if(i == argc-1) {
                     printf("Missing time after sleep\n");
                     return 1;
@@ -283,7 +283,8 @@ int main(int argc, char* argv[]) {
                     printf("Invalid time %s after sleep\n", argv[i+1]);
                     return 1;
                 }
-            } else if(strcmp(argv[i], "modes") != 0) {
+                i = i + 1;
+            } else if(strcmp(argv[i], "modes") == 0) {
             } else {
                 printf("Unknown command %s\n\n", argv[i]);
                 printUsage(argc, argv);
@@ -292,23 +293,224 @@ int main(int argc, char* argv[]) {
         }
     }
 
-
-    /* Connect to the device */
-    #ifdef DEBUG
-        printf("Command summary:\n\tPort:\t%s\n", lpPort);
-    #endif
-
     e = egunConnect_Serial(&lpEgun, lpPort);
     if(e != egunE_Ok) {
-        printf("%s:%u Failed to connect (%u)\n", __FILE__, __LINE__, e);
+        printf("%s:%u Failed to connect on port %s (%u)\n", __FILE__, __LINE__, (lpPort == NULL) ? "default" : lpPort, e);
         return 1;
     }
 
-
-    if(cmd == egunCliCommand_ID) {
-        e = lpEgun->vtbl->requestId(lpEgun);
-        if(e != egunE_Ok) {
-            printf("%s:%u Failed to send ID request (%u)\n", __FILE__, __LINE__, e);
+    /* Execute CLI commands */
+    {
+        unsigned long int i;
+        for(i = 1; i < argc; i = i + 1) {
+            if(strcmp(argv[i], "-port") == 0) { i = i + 1;
+            } else if(strcmp(argv[i], "id") == 0) {
+                printf("Requesting ID\n");
+                lpEgun->vtbl->requestId(lpEgun);
+            } else if(strcmp(argv[i], "off") == 0) {
+                printf("Disabling supplies\n");
+                lpEgun->vtbl->off(lpEgun);
+            } else if(strcmp(argv[i], "catgetv") == 0) {
+                printf("Requesting cathode voltage\n");
+                lpEgun->vtbl->getCurrentVoltage(lpEgun, 1);
+            } else if(strcmp(argv[i], "catgeta") == 0) {
+                printf("Requesting cathode current\n");
+                lpEgun->vtbl->getCurrentCurrent(lpEgun, 1);
+            } else if(strcmp(argv[i], "catsetv") == 0) {
+                if(i == argc-1) {
+                    printf("Missing cathode voltage argument after catsetv\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid voltage %s after catsetv\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting cathode voltage to %lu\n", dwTemp);
+                lpEgun->vtbl->setVoltage(lpEgun, 1, dwTemp);
+            } else if(strcmp(argv[i], "catseta") == 0) {
+                if(i == argc-1) {
+                    printf("Missing cathode current argument after catseta\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid current %s after catseta\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting cathode current to %lu\n", dwTemp);
+                lpEgun->vtbl->setCurrent(lpEgun, 1, dwTemp);
+            } else if(strcmp(argv[i], "catsetpol") == 0) {
+                if(i == argc-1) {
+                    printf("Missing cathode polarity after catsetpol\n");
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting cathode polarity to %s\n", argv[i]);
+                lpEgun->vtbl->setPSUPolarity(lpEgun, 1, (strcmp(argv[i], "pos") == 0) ? egunPolarity_Pos : egunPolarity_Neg);
+            } else if(strcmp(argv[i], "whegetv") == 0) {
+                printf("Requesting Whenelt cylinder voltage\n");
+                lpEgun->vtbl->getCurrentVoltage(lpEgun, 2);
+            } else if(strcmp(argv[i], "whegeta") == 0) {
+                printf("Requesting Whenelt cylinder current\n");
+                lpEgun->vtbl->getCurrentCurrent(lpEgun, 2);
+            } else if(strcmp(argv[i], "whesetv") == 0) {
+                if(i == argc-1) {
+                    printf("Missing Whenelt cylinder voltage argument after whesetv\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid voltage %s after whesetv\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting Whenelt cylinder voltage to %lu\n", dwTemp);
+                lpEgun->vtbl->setVoltage(lpEgun, 2, dwTemp);
+            } else if(strcmp(argv[i], "wheseta") == 0) {
+                if(i == argc-1) {
+                    printf("Missing Whenelt cylinder current argument after wheseta\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid current %s after wheseta\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting Whenelt cylinder current limit to %lu\n", dwTemp);
+                lpEgun->vtbl->setCurrent(lpEgun, 2, dwTemp);
+            } else if(strcmp(argv[i], "whesetpol") == 0) {
+                if(i == argc-1) {
+                    printf("Missing Whenelt polarity after whesetpol\n");
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting Whenelt cylinder polarity to %s\n", argv[i]);
+                lpEgun->vtbl->setPSUPolarity(lpEgun, 2, (strcmp(argv[i], "pos") == 0) ? egunPolarity_Pos : egunPolarity_Neg);
+            } else if(strcmp(argv[i], "focgetv") == 0) {
+                printf("Requesting focus voltage\n");
+                lpEgun->vtbl->getCurrentVoltage(lpEgun, 3);
+            } else if(strcmp(argv[i], "focgeta") == 0) {
+                printf("Requesting focus current\n");
+                lpEgun->vtbl->getCurrentCurrent(lpEgun, 3);
+            } else if(strcmp(argv[i], "focsetv") == 0) {
+                if(i == argc-1) {
+                    printf("Missing focus grid voltage argument after focsetv\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid voltage %s after focsetv\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting focus voltage to %lu\n", dwTemp);
+                lpEgun->vtbl->setVoltage(lpEgun, 3, dwTemp);
+            } else if(strcmp(argv[i], "focseta") == 0) {
+                if(i == argc-1) {
+                    printf("Missing focus grid current argument after focseta\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid current %s after focseta\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting focus current limit to %lu\n", dwTemp);
+                lpEgun->vtbl->setCurrent(lpEgun, 3, dwTemp);
+            } else if(strcmp(argv[i], "focsetpol") == 0) {
+                if(i == argc-1) {
+                    printf("Missing focus grid polarity after focsetpol\n");
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting focus polarity to %s\n", argv[i]);
+                lpEgun->vtbl->setPSUPolarity(lpEgun, 3, (strcmp(argv[i], "pos") == 0) ? egunPolarity_Pos : egunPolarity_Neg);
+            } else if(strcmp(argv[i], "4getv") == 0) {
+                printf("Requesting PSU4 voltage\n");
+                lpEgun->vtbl->getCurrentVoltage(lpEgun, 4);
+            } else if(strcmp(argv[i], "4geta") == 0) {
+                printf("Requesting PSU4 current\n");
+                lpEgun->vtbl->getCurrentCurrent(lpEgun, 4);
+            } else if(strcmp(argv[i], "4setv") == 0) {
+                if(i == argc-1) {
+                    printf("Missing power supply 4 voltage argument after 4setv\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid voltage %s after 4setv\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting PSU4 voltage to %lu\n", dwTemp);
+                lpEgun->vtbl->setVoltage(lpEgun, 4, dwTemp);
+            } else if(strcmp(argv[i], "4seta") == 0) {
+                if(i == argc-1) {
+                    printf("Missing power supply 4 current argument after 4seta\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid current %s after 4seta\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting PSU4 current limit to %lu\n", dwTemp);
+                lpEgun->vtbl->setCurrent(lpEgun, 4, dwTemp);
+            } else if(strcmp(argv[i], "4setpol") == 0) {
+                if(i == argc-1) {
+                    printf("Missing power supply 4 polarity after 4setpol\n");
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting PSU4 polarity to %s\n", argv[i]);
+                lpEgun->vtbl->setPSUPolarity(lpEgun, 4, (strcmp(argv[i], "pos") == 0) ? egunPolarity_Pos : egunPolarity_Neg);
+            } else if(strcmp(argv[i], "filgeta") == 0) {
+                printf("Requesting filament current\n");
+                lpEgun->vtbl->getFilamentCurrent(lpEgun);
+            } else if(strcmp(argv[i], "filseta") == 0) {
+                if(i == argc-1) {
+                    printf("Missing filament current after filseta\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid current %s after filseta\n", argv[i+1]);
+                    return 1;
+                }
+                i = i + 1;
+                printf("Setting filament current to %lu\n", dwTemp);
+                lpEgun->vtbl->setFilamentCurrent(lpEgun, dwTemp);
+            } else if(strcmp(argv[i], "filon") == 0) {
+                printf("Filament on\n");
+                lpEgun->vtbl->setFilamentOn(lpEgun, true);
+            } else if(strcmp(argv[i], "filoff") == 0) {
+                printf("Filament off\n");
+                lpEgun->vtbl->setFilamentOn(lpEgun, false);
+            } else if(strcmp(argv[i], "insul") == 0) {
+                printf("Running insulation test\n");
+                lpEgun->vtbl->insulationTest(lpEgun);
+                sleep(135); /* ToDo: Wait on "insulok" or error message instead of sleeping a measured amount of time */
+            } else if(strcmp(argv[i], "beamon") == 0) {
+                printf("Enabling beam\n");
+                lpEgun->vtbl->beamOn(lpEgun);
+                sleep(525); /* ToDo: Wait on "beamon" or error message instead of sleeping a measured amount of time */
+            } else if(strcmp(argv[i], "sleep") == 0) {
+                if(i == argc-1) {
+                    printf("Missing time after sleep\n");
+                    return 1;
+                }
+                if(sscanf(argv[i+1], "%lu", &dwTemp) != 1) {
+                    printf("Invalid time %s after sleep\n", argv[i+1]);
+                    return 1;
+                }
+                printf("Sleeping for %lu seconds\n", dwTemp);
+                sleep(dwTemp);
+                i = i + 1;
+            } else if(strcmp(argv[i], "modes") != 0) {
+                printf("Requesting PSU modes\n");
+                lpEgun->vtbl->getPSUModes(lpEgun);
+            } else {
+                printf("Unknown command %s\n\n", argv[i]);
+                printUsage(argc, argv);
+                return 1;
+            }
         }
     }
 
