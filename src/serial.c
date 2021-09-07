@@ -840,6 +840,405 @@ void handleSerial0Messages() {
     =================================================
 */
 
+#ifdef SERIAL_UART1_ENABLE
+    static unsigned char handleSerial1Messages_StringBuffer[SERIAL_RINGBUFFER_SIZE];
+
+    static unsigned char handleSerial1Messages_Response__ID[] = "$$$electronctrl_20210819_001\n";
+    static unsigned char handleSerial1Messages_Response__ERR[] = "$$$err\n";
+    static unsigned char handleSerial1Messages_Response__VN_Part[] = "$$$v";
+    static unsigned char handleSerial1Messages_Response__AN_Part[] = "$$$a";
+    static unsigned char handleSerial1Messages_Response__PSUSTATE_Part[] = "$$$psustate";
+
+    static void handleSerial1Messages_CompleteMessage(
+        unsigned long int dwLength
+    ) {
+        unsigned long int dwLen;
+    #if 0
+        unsigned long int dwDiscardBytes;
+    #endif
+
+        /*
+            We have received a complete message - now we will remove the sync
+            pattern, calculate actual length
+        */
+        ringBuffer_discardN(&serialRB1_RX, 3); /* Skip sync pattern */
+        dwLen = dwLength - 3;
+    #if 0
+        dwDiscardBytes = dwLen; /* Remember how many bytes we have to skip in the end ... */
+    #endif
+
+        /* Remove end of line for next parser ... */
+        dwLen = dwLen - 1; /* Remove LF */
+        dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB1_RX, dwLen-1) == 0x0D) ? 1 : 0); /* Remove CR if present */
+
+
+        /* Now copy message into a local buffer to make parsing WAY easier ... */
+        ringBuffer_ReadChars(&serialRB1_RX, handleSerial1Messages_StringBuffer, dwLen);
+    #if 0
+        ringBuffer_discardN(&serialRB1_RX, dwDiscardBytes-dwLen);
+    #endif
+        /*
+            Now process that message at <handleSerial1Messages_StringBuffer, dwLen>
+        */
+
+        /*
+            Parse different commands
+        */
+        if(strCompare("id", 2, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            /* Send ID response ... */
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__ID, sizeof(handleSerial1Messages_Response__ID)-1);
+            serialModeTX0();
+        } else if(strCompare("psugetv1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t v;
+            {
+                cli();
+                v = currentADC[0];
+                sei();
+            }
+            v = serialADC2VoltsHCP(v);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__VN_Part, sizeof(handleSerial1Messages_Response__VN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '1');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugetv2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t v;
+            {
+                cli();
+                v = currentADC[2];
+                sei();
+            }
+            v = serialADC2VoltsHCP(v);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__VN_Part, sizeof(handleSerial1Messages_Response__VN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '2');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugetv3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t v;
+            {
+                cli();
+                v = currentADC[4];
+                sei();
+            }
+            v = serialADC2VoltsHCP(v);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__VN_Part, sizeof(handleSerial1Messages_Response__VN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '3');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugetv4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t v;
+            {
+                cli();
+                v = currentADC[6];
+                sei();
+            }
+            v = serialADC2VoltsHCP(v);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__VN_Part, sizeof(handleSerial1Messages_Response__VN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '4');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugeta1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t a;
+            {
+                cli();
+                a = currentADC[1];
+                sei();
+            }
+            a = serialADC2TenthMicroampsHCP(a);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '1');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugeta2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t a;
+            {
+                cli();
+                a = currentADC[3];
+                sei();
+            }
+            a = serialADC2TenthMicroampsHCP(a);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '2');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugeta3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t a;
+            {
+                cli();
+                a = currentADC[5];
+                sei();
+            }
+            a = serialADC2TenthMicroampsHCP(a);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '3');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psugeta4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t a;
+            {
+                cli();
+                a = currentADC[7];
+                sei();
+            }
+            a = serialADC2TenthMicroampsHCP(a);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, '4');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strCompare("psupol1p", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].polPolarity = psuPolarity_Positive;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol1n", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].polPolarity = psuPolarity_Negative;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol2p", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[1].polPolarity = psuPolarity_Positive;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol2n", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[1].polPolarity = psuPolarity_Negative;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol3p", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[2].polPolarity = psuPolarity_Positive;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol3n", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[2].polPolarity = psuPolarity_Negative;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psupol4p", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[3].polPolarity = psuPolarity_Positive;
+        } else if(strCompare("psupol4n", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[3].polPolarity = psuPolarity_Negative;
+        } else if(strCompare("psuon1", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].bOutputEnable = true;
+        } else if(strCompare("psuoff1", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].bOutputEnable = false;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psuon2", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[1].bOutputEnable = true;
+        } else if(strCompare("psuoff2", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[1].bOutputEnable = false;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psuon3", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[2].bOutputEnable = true;
+        } else if(strCompare("psuoff3", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[2].bOutputEnable = false;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psuon4", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[3].bOutputEnable = true;
+        } else if(strCompare("psuoff4", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[3].bOutputEnable = false;
+        } else if(strCompare("off", 3, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].bOutputEnable = false;
+            psuStates[1].bOutputEnable = false;
+            psuStates[2].bOutputEnable = false;
+            psuStates[3].bOutputEnable = false;
+            setFilamentOn(false);
+            rampMode.mode = controllerRampMode__None;
+            statusMessageOff();
+        } else if(strCompare("filon", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setFilamentOn(true);
+        } else if(strCompare("filoff", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setFilamentOn(false);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("psumode", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            unsigned long int iPSU;
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__PSUSTATE_Part, sizeof(handleSerial1Messages_Response__PSUSTATE_Part)-1);
+            for(iPSU = 0; iPSU < 4; iPSU = iPSU + 1) {
+                if(psuStates[iPSU].bOutputEnable != true) {
+                    ringBuffer_WriteChar(&serialRB1_TX, '-');
+                } else if(psuStates[iPSU].limitMode == psuLimit_Current) {
+                    ringBuffer_WriteChar(&serialRB1_TX, 'C');
+                } else {
+                    ringBuffer_WriteChar(&serialRB1_TX, 'V');
+                }
+            }
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strComparePrefix("psusetv1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 1);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psusetv2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 2);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psusetv3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 3);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psusetv4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 4);
+        } else if(strComparePrefix("psuseta1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUMicroamps(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 1);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psuseta2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUMicroamps(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 2);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psuseta3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUMicroamps(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 3);
+            rampMode.mode = controllerRampMode__None;
+        } else if(strComparePrefix("psuseta4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUMicroamps(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 4);
+        } else if(strComparePrefix("fila", 4, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            uint16_t a;
+            {
+                cli();
+                a = currentADC[8];
+                sei();
+            }
+            a = serialADC2MilliampsFILA(a);
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, 'f');
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+            serialModeTX0();
+        } else if(strComparePrefix("setfila", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
+            setFilamentPWM(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7));
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("insul", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            rampStart_InsulationTest();
+        } else if(strCompare("beamhvoff", 9, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            psuStates[0].bOutputEnable = false;
+            psuStates[1].bOutputEnable = false;
+            psuStates[2].bOutputEnable = false;
+            psuStates[3].bOutputEnable = false;
+            rampMode.mode = controllerRampMode__None;
+        } else if(strCompare("beamon", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            rampStart_BeamOn();
+    #ifdef DEBUG
+        } else if(strCompare("rawadc", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            /* Deliver raw adc value of frist channel for testing purpose ... */
+            char bTemp[6];
+            uint16_t adcValue = currentADC[0];
+
+            int len = 0;
+            unsigned long int i;
+
+            if(adcValue == 0) {
+                ringBuffer_WriteChars(&serialRB1_TX, "$$$0\n", 5);
+            } else {
+                ringBuffer_WriteChars(&serialRB1_TX, "$$$", 3);
+
+                len = 0;
+                while(adcValue > 0) {
+                    uint16_t nextVal = adcValue % 10;
+                    adcValue = adcValue / 10;
+
+                    nextVal = nextVal + 0x30;
+                    bTemp[len] = nextVal;
+                    len = len + 1;
+                }
+
+                for(i = 0; i < len; i=i+1) {
+                    ringBuffer_WriteChar(&serialRB1_TX, bTemp[len - 1 - i]);
+                }
+                ringBuffer_WriteChar(&serialRB1_TX, '\n');
+            }
+            serialModeTX0();
+    #endif
+        } else {
+            /* Unknown: Send error response ... */
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__ERR, sizeof(handleSerial1Messages_Response__ERR)-1);
+            serialModeTX0();
+        }
+    }
+
+    void handleSerial1Messages() {
+        unsigned long int dwAvailableLength;
+        unsigned long int dwMessageEnd;
+
+        /*
+            Check if we received new data. It makes no sense to re-check message formats
+            in case nothing arrived.
+        */
+    #if 0
+        if(serialRXFlag == 0) { return; }
+        serialRXFlag = 0;
+    #endif
+        /*
+            We simply check if a full message has arrived in the ringbuffer. If
+            it has we will start to decode the message with the appropriate module
+        */
+        dwAvailableLength = ringBuffer_AvailableN(&serialRB1_RX);
+        if(dwAvailableLength < 3) { return; } /* We cannot even see a full synchronization pattern ... */
+
+        /*
+            First we scan for the synchronization pattern. If the first character
+            is not found - skip over any additional bytes ...
+        */
+        while((ringBuffer_PeekChar(&serialRB1_RX) != '$') && (ringBuffer_AvailableN(&serialRB1_RX) > 3)) {
+            ringBuffer_discardN(&serialRB1_RX, 1); /* Skip next character */
+        }
+
+        /* If we are too short to fit the entire synchronization packet - wait for additional data to arrive */
+        if(ringBuffer_AvailableN(&serialRB1_RX) < 5) { return; }
+
+        /*
+            Discard additional bytes in case we don't see the full sync pattern and
+            as long as data is available
+        */
+        while(
+            (
+                (ringBuffer_PeekCharN(&serialRB1_RX, 0) != '$') ||
+                (ringBuffer_PeekCharN(&serialRB1_RX, 1) != '$') ||
+                (ringBuffer_PeekCharN(&serialRB1_RX, 2) != '$') ||
+                (ringBuffer_PeekCharN(&serialRB1_RX, 3) == '$')
+            )
+            && (ringBuffer_AvailableN(&serialRB1_RX) > 4)
+        ) {
+            ringBuffer_discardN(&serialRB1_RX, 1);
+        }
+
+        /*
+            If there is not enough data for a potential packet to be finished
+            leave (we still have the sync pattern at the start so we can simply
+            retry when additional data has arrived)
+        */
+        if(ringBuffer_AvailableN(&serialRB1_RX) < 5) { return; }
+        dwAvailableLength = ringBuffer_AvailableN(&serialRB1_RX);
+
+        /*
+            Now check if we have already received a complete message OR are seeing
+            another more sync pattern - in the latter case we ignore any message ...
+        */
+        dwMessageEnd = 3;
+        while((dwMessageEnd < dwAvailableLength) && (ringBuffer_PeekCharN(&serialRB1_RX, dwMessageEnd) != 0x0A) && (ringBuffer_PeekCharN(&serialRB1_RX, dwMessageEnd) != '$')) {
+            dwMessageEnd = dwMessageEnd + 1;
+        }
+        if(dwMessageEnd >= dwAvailableLength) {
+            return;
+        }
+
+        if(ringBuffer_PeekCharN(&serialRB1_RX, dwMessageEnd) == 0x0A) {
+            /* Received full message ... */
+            handleSerial1Messages_CompleteMessage(dwMessageEnd+1);
+        }
+        if(ringBuffer_PeekCharN(&serialRB1_RX, dwMessageEnd) == '$') {
+            /* Discard the whole packet but keep the next sync pattern */
+            ringBuffer_discardN(&serialRB1_RX, dwMessageEnd);
+        }
+
+        /*
+            In any other case ignore and continue without dropping the message ...
+            we will wait till we received the whole message
+        */
+        return;
+    }
+#endif
+
 /*
     =================================================
     = Command handler for serial protocol on USART2 =

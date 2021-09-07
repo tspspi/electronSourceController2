@@ -23,6 +23,7 @@ struct ringBuffer {
 void serialInit0();
 
 void handleSerial0Messages();
+void handleSerial1Messages();
 void handleSerial2Messages();
 
 void rampMessage_ReportVoltages();

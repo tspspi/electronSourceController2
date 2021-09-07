@@ -282,6 +282,9 @@ int main() {
             for such constraints during slow control of the experiment
         */
         handleSerial0Messages(); /* main external serial interface */
+        #ifdef SERIAL_UART1_ENABLE
+            handleSerial1Messages(); /* Serial port for status reports */
+        #endif
         #ifdef SERIAL_UART2_ENABLE
             handleSerial2Messages(); /* Serial port for status reports */
         #endif
