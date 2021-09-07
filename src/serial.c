@@ -249,6 +249,122 @@ ISR(USART0_UDRE_vect) {
     }
 }
 
+
+#ifdef SERIAL_UART1_ENABLE
+    /*
+        Serial handler (UART1, UART2)
+    */
+    volatile struct ringBuffer serialRB1_TX;
+    volatile struct ringBuffer serialRB1_RX;
+
+    static volatile int serialRX1Flag; /* RX flag is set to indicate that new data has arrived */
+
+    void serialModeTX1() {
+        uint8_t sregOld = SREG;
+        #ifndef FRAMAC_SKIP
+            cli();
+        #endif
+
+        UCSR1A = UCSR1A | 0x40; /* Reset TXCn bit */
+        UCSR1B = UCSR1B | 0x08 | 0x20;
+        #ifndef FRAMAC_SKIP
+            SREG = sregOld;
+        #endif
+    }
+    void serialInit1() {
+        uint8_t sregOld = SREG;
+        #ifndef FRAMAC_SKIP
+            cli();
+        #endif
+
+        ringBuffer_Init(&serialRB1_TX);
+        ringBuffer_Init(&serialRB1_RX);
+
+        serialRXFlag = 0;
+
+        UBRR1   = 103; // 16 : 115200, 103: 19200
+        UCSR1A  = 0x02;
+        UCSR1B  = 0x10 | 0x80; /* Enable receiver and RX interrupt */
+        UCSR1C  = 0x06;
+
+        SREG = sregOld;
+
+        return;
+    }
+    ISR(USART1_RX_vect) {
+        ringBuffer_WriteChar(&serialRB1_RX, UDR1);
+        serialRX1Flag = 1;
+    }
+    ISR(USART1_UDRE_vect) {
+        if(ringBuffer_Available(&serialRB1_TX) == true) {
+            /* Shift next byte to the outside world ... */
+            UDR1 = ringBuffer_ReadChar(&serialRB1_TX);
+        } else {
+            /*
+                Since no more data is available for shifting simply stop
+                the transmitter and associated interrupts
+            */
+            UCSR1B = UCSR1B & (~(0x08 | 0x20));
+        }
+    }
+#endif
+
+#ifdef SERIAL_UART2_ENABLE
+    volatile struct ringBuffer serialRB2_TX;
+    volatile struct ringBuffer serialRB2_RX;
+
+    static volatile int serialRX2Flag; /* RX flag is set to indicate that new data has arrived */
+
+    void serialModeTX2() {
+        uint8_t sregOld = SREG;
+        #ifndef FRAMAC_SKIP
+            cli();
+        #endif
+
+        UCSR2A = UCSR2A | 0x40; /* Reset TXCn bit */
+        UCSR2B = UCSR2B | 0x08 | 0x20;
+        #ifndef FRAMAC_SKIP
+            SREG = sregOld;
+        #endif
+    }
+    void serialInit2() {
+        uint8_t sregOld = SREG;
+        #ifndef FRAMAC_SKIP
+            cli();
+        #endif
+
+        ringBuffer_Init(&serialRB2_TX);
+        ringBuffer_Init(&serialRB2_RX);
+
+        serialRXFlag = 0;
+
+        UBRR2   = 103; // 16 : 115200, 103: 19200
+        UCSR2A  = 0x02;
+        UCSR2B  = 0x10 | 0x80; /* Enable receiver and RX interrupt */
+        UCSR2C  = 0x06;
+
+        SREG = sregOld;
+
+        return;
+    }
+    ISR(USART2_RX_vect) {
+        ringBuffer_WriteChar(&serialRB2_RX, UDR2);
+        serialRX2Flag = 1;
+    }
+    ISR(USART2_UDRE_vect) {
+        if(ringBuffer_Available(&serialRB2_TX) == true) {
+            /* Shift next byte to the outside world ... */
+            UDR2 = ringBuffer_ReadChar(&serialRB2_TX);
+        } else {
+            /*
+                Since no more data is available for shifting simply stop
+                the transmitter and associated interrupts
+            */
+            UCSR2B = UCSR2B & (~(0x08 | 0x20));
+        }
+    }
+#endif
+
 /*
     =================================================
     = Command handler for serial protocol on USART0 =
@@ -718,6 +834,114 @@ void handleSerial0Messages() {
     return;
 }
 
+/*
+    =================================================
+    = Command handler for serial protocol on USART1 =
+    =================================================
+*/
+
+/*
+    =================================================
+    = Command handler for serial protocol on USART2 =
+    =================================================
+
+    Protocol on UART2 is pretty simple. Any character sent will trigger
+    a status message delivery. All data will be dropped. For each
+    incoming character there will be one status message (except for
+    linebreaks)
+*/
+
+#ifdef SERIAL_UART2_ENABLE
+    void handleSerial2Messages() {
+        unsigned long int dwAvailableLength;
+
+        /*
+            Only run if data is available ...
+        */
+        {
+            uint8_t sregOld = SREG;
+            #ifdef FRAMAC_SKIP
+                cli();
+            #endif
+            if(serialRX2Flag == 0) {
+                #ifdef FRAMAC_SKIP
+                    SREG = sregOld;
+                #endif
+                return;
+            }
+            serialRX2Flag = 0;
+            SREG = sregOld;
+        }
+
+        /*
+            This is a pretty simple protocol - discard every received character
+            exactly once and dump a status message ...
+        */
+
+        /*
+            First we publish the four voltages
+        */
+        for(;;) {
+            dwAvailableLength = ringBuffer_AvailableN(&serialRB2_RX);
+            if(dwAvailableLength == 0) {
+                return;
+            }
+
+            /* Ignore every carriage return to make programming on the client side in scripting languages easier */
+            char c = ringBuffer_ReadChar(&serialRB2_RX);
+            if((c == 0x0A) || (c == 0x0D)) { continue; }
+
+            /* For every other character enqueue our message ... */
+
+            /*
+                FIrst the four voltages and four currents
+            */
+            for(unsigned long int i = 0; i < 4; i=i+1) {
+                uint16_t v, a;
+
+                cli();
+                v = currentADC[i*2];
+                a = currentADC[i*2+1];
+                sei();
+
+                v = serialADC2VoltsHCP(v);
+                a = serialADC2TenthMicroampsHCP(a);
+
+                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, v);
+                ringBuffer_WriteChar(&serialRB2_TX, ':');
+                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+                ringBuffer_WriteChar(&serialRB2_TX, ':');
+            }
+
+            /*
+                Then filament setting and filament current
+            */
+            {
+                uint16_t a = getFilamentPWM();
+                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+                ringBuffer_WriteChar(&serialRB2_TX, ':');
+                {
+                    cli();
+                    a = currentADC[8];
+                    sei();
+                }
+                a = serialADC2MilliampsFILA(a);
+                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+            }
+
+            ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
+            serialModeTX0();
+        }
+    }
+#endif
+
+
+
+/*
+    ==============================
+    Status message output routines
+    ==============================
+*/
 
 void rampMessage_ReportVoltages() {
     unsigned long int i;

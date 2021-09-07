@@ -1,6 +1,9 @@
 #ifndef __is_included__d81475f8_df0f_11eb_ba7e_b499badf00a1
 #define __is_included__d81475f8_df0f_11eb_ba7e_b499badf00a1 1
 
+#define SERIAL_UART1_ENABLE 1
+#define SERIAL_UART2_ENABLE 1
+
 #ifndef CONTROLLER_RAMP_TARGETV__K
     #define CONTROLLER_RAMP_TARGETV__K 2018
 #endif
