@@ -57,6 +57,12 @@ This is firmware for a simple electron gun controller that is controlling
 | A7  | PSU4: Current sense                 | Analog in                 | PF7                   |
 | 38  | Filament power supply (230V side)   | Digital out               | PD7                   |
 | A8  | Current sensor for filament         | Analog in                 | PK0                   |
+| 50  | AD7705 MISO                         | Digital in                | PB3                   |
+| 51  | AD7705 MOSI                         | Digital out               | PB2                   |
+| 52  | AD7705 SCK                          | Digital out               | PB1                   |
+| 53  | AD7705 CS                           | Digital out               | PB0                   |
+|PWM10| AD7705 Reset                        | Digital out               | PB4                   |
+|PWM11| AD7705 data ready                   | Digital in                | PB5                   |
 
 ## Protocol
 
