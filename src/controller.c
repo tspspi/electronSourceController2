@@ -247,6 +247,12 @@ int main() {
             USART0 is used to communicate via serial or USB interface
     */
     serialInit0();
+    #ifdef SERIAL_UART1_ENABLE
+        serialInit1();
+    #endif
+    #ifdef SERIAL_UART2_ENABLE
+        serialInit2();
+    #endif
 
     #ifndef FRAMAC_SKIP
 		sei();

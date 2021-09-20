@@ -21,6 +21,8 @@ struct ringBuffer {
 };
 
 void serialInit0();
+void serialInit1();
+void serialInit2();
 
 void handleSerial0Messages();
 void handleSerial1Messages();

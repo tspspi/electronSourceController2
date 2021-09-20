@@ -311,7 +311,6 @@ ISR(USART0_UDRE_vect) {
 
 #ifdef SERIAL_UART2_ENABLE
     volatile struct ringBuffer serialRB2_TX;
-    volatile struct ringBuffer serialRB2_RX;
 
     static volatile int serialRX2Flag; /* RX flag is set to indicate that new data has arrived */
 
@@ -334,7 +333,6 @@ ISR(USART0_UDRE_vect) {
         #endif
 
         ringBuffer_Init(&serialRB2_TX);
-        ringBuffer_Init(&serialRB2_RX);
 
         serialRXFlag = 0;
 
@@ -348,8 +346,16 @@ ISR(USART0_UDRE_vect) {
         return;
     }
     ISR(USART2_RX_vect) {
-        ringBuffer_WriteChar(&serialRB2_RX, UDR2);
-        serialRX2Flag = 1;
+        uint8_t rcvData = UDR2;
+
+        if((rcvData == 0x0A) || (rcvData == 0x0D)) {
+            return;
+        } else {
+            if(rcvData == 'q') {
+                serialRX2Flag = 1;
+            }
+            return;
+        }
     }
     ISR(USART2_UDRE_vect) {
         if(ringBuffer_Available(&serialRB2_TX) == true) {
@@ -887,7 +893,7 @@ void handleSerial0Messages() {
         if(strCompare("id", 2, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Send ID response ... */
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__ID, sizeof(handleSerial1Messages_Response__ID)-1);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugetv1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t v;
             {
@@ -901,7 +907,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugetv2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t v;
             {
@@ -915,7 +921,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugetv3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t v;
             {
@@ -929,7 +935,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugetv4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t v;
             {
@@ -943,7 +949,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugeta1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t a;
             {
@@ -957,7 +963,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugeta2", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t a;
             {
@@ -971,7 +977,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugeta3", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t a;
             {
@@ -985,7 +991,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psugeta4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t a;
             {
@@ -999,7 +1005,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strCompare("psupol1p", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             psuStates[0].polPolarity = psuPolarity_Positive;
             rampMode.mode = controllerRampMode__None;
@@ -1067,7 +1073,7 @@ void handleSerial0Messages() {
                 }
             }
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strComparePrefix("psusetv1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             setPSUVolts(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 1);
             rampMode.mode = controllerRampMode__None;
@@ -1103,7 +1109,7 @@ void handleSerial0Messages() {
             ringBuffer_WriteChar(&serialRB1_TX, ':');
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX0();
+            serialModeTX1();
         } else if(strComparePrefix("setfila", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
             setFilamentPWM(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7));
@@ -1147,12 +1153,12 @@ void handleSerial0Messages() {
                 }
                 ringBuffer_WriteChar(&serialRB1_TX, '\n');
             }
-            serialModeTX0();
+            serialModeTX1();
     #endif
         } else {
             /* Unknown: Send error response ... */
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__ERR, sizeof(handleSerial1Messages_Response__ERR)-1);
-            serialModeTX0();
+            serialModeTX1();
         }
     }
 
@@ -1252,8 +1258,6 @@ void handleSerial0Messages() {
 
 #ifdef SERIAL_UART2_ENABLE
     void handleSerial2Messages() {
-        unsigned long int dwAvailableLength;
-
         /*
             Only run if data is available ...
         */
@@ -1278,59 +1282,44 @@ void handleSerial0Messages() {
         */
 
         /*
-            First we publish the four voltages
+            FIrst the four voltages and four currents
         */
-        for(;;) {
-            dwAvailableLength = ringBuffer_AvailableN(&serialRB2_RX);
-            if(dwAvailableLength == 0) {
-                return;
-            }
+        for(unsigned long int i = 0; i < 4; i=i+1) {
+            uint16_t v, a;
 
-            /* Ignore every carriage return to make programming on the client side in scripting languages easier */
-            char c = ringBuffer_ReadChar(&serialRB2_RX);
-            if((c == 0x0A) || (c == 0x0D)) { continue; }
+            cli();
+            v = currentADC[i*2];
+            a = currentADC[i*2+1];
+            sei();
 
-            /* For every other character enqueue our message ... */
+            v = serialADC2VoltsHCP(v);
+            a = serialADC2TenthMicroampsHCP(a);
 
-            /*
-                FIrst the four voltages and four currents
-            */
-            for(unsigned long int i = 0; i < 4; i=i+1) {
-                uint16_t v, a;
-
-                cli();
-                v = currentADC[i*2];
-                a = currentADC[i*2+1];
-                sei();
-
-                v = serialADC2VoltsHCP(v);
-                a = serialADC2TenthMicroampsHCP(a);
-
-                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, v);
-                ringBuffer_WriteChar(&serialRB2_TX, ':');
-                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-                ringBuffer_WriteChar(&serialRB2_TX, ':');
-            }
-
-            /*
-                Then filament setting and filament current
-            */
-            {
-                uint16_t a = getFilamentPWM();
-                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-                ringBuffer_WriteChar(&serialRB2_TX, ':');
-                {
-                    cli();
-                    a = currentADC[8];
-                    sei();
-                }
-                a = serialADC2MilliampsFILA(a);
-                ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-            }
-
-            ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
-            serialModeTX0();
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, v);
+            ringBuffer_WriteChar(&serialRB2_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+            ringBuffer_WriteChar(&serialRB2_TX, ':');
         }
+
+        /*
+            Then filament setting and filament current
+        */
+        {
+            uint16_t a = getFilamentPWM();
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+            ringBuffer_WriteChar(&serialRB2_TX, ':');
+            {
+                cli();
+                a = currentADC[8];
+                sei();
+            }
+            a = serialADC2MilliampsFILA(a);
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
+        }
+
+        ringBuffer_WriteChar(&serialRB2_TX, 0x0D);
+        ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
+        serialModeTX2();
     }
 #endif
 
@@ -1352,13 +1341,25 @@ void rampMessage_ReportVoltages() {
             sei();
         }
         v = serialADC2VoltsHCP(v);
+
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, 0x31+i);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, v);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+
+        #ifdef SERIAL_UART1_ENABLE
+            ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x31+i);
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, v);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        #endif
     }
     serialModeTX0();
+    #ifdef SERIAL_UART1_ENABLE
+        serialModeTX1();
+    #endif
 }
 
 static unsigned char rampMessage_ReportFilaCurrents__Message1[] = "$$$filseta:";
@@ -1367,36 +1368,66 @@ static unsigned char rampMessage_ReportFilaCurrents__MessageDisabled[] = "disabl
 void rampMessage_ReportFilaCurrents() {
     if(isFilamentOn() != false) {
         uint16_t a = getFilamentPWM();
+
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
+
+        #ifdef SERIAL_UART1_ENABLE
+            ringBuffer_WriteChars(&serialRB1_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, ':');
+        #endif
         {
             cli();
             a = currentADC[8];
             sei();
         }
         a = serialADC2MilliampsFILA(a);
+
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+
+        #ifdef SERIAL_UART1_ENABLE
+            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
+            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        #endif
     } else {
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__MessageDisabled, sizeof(rampMessage_ReportFilaCurrents__MessageDisabled)-1);
+
+        #ifdef SERIAL_UART1_ENABLE
+            ringBuffer_WriteChars(&serialRB1_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
+            ringBuffer_WriteChars(&serialRB1_TX, rampMessage_ReportFilaCurrents__MessageDisabled, sizeof(rampMessage_ReportFilaCurrents__MessageDisabled)-1);
+        #endif
     }
     serialModeTX0();
+    #ifdef SERIAL_UART1_ENABLE
+        serialModeTX1();
+    #endif
 }
 
 static unsigned char rampMessage_InsulationTestSuccess__Message[] = "$$$insulok\n";
 void rampMessage_InsulationTestSuccess() {
     ringBuffer_WriteChars(&serialRB0_TX, rampMessage_InsulationTestSuccess__Message, sizeof(rampMessage_InsulationTestSuccess__Message)-1);
     serialModeTX0();
+
+    #ifdef SERIAL_UART1_ENABLE
+        ringBuffer_WriteChars(&serialRB1_TX, rampMessage_InsulationTestSuccess__Message, sizeof(rampMessage_InsulationTestSuccess__Message)-1);
+        serialModeTX1();
+    #endif
 }
 
 static unsigned char rampMessage_BeamOnSuccess__Message[] = "$$$beamon\n";
 void rampMessage_BeamOnSuccess() {
     ringBuffer_WriteChars(&serialRB0_TX, rampMessage_BeamOnSuccess__Message, sizeof(rampMessage_BeamOnSuccess__Message)-1);
     serialModeTX0();
-}
 
+    #ifdef SERIAL_UART1_ENABLE
+        ringBuffer_WriteChars(&serialRB1_TX, rampMessage_BeamOnSuccess__Message, sizeof(rampMessage_BeamOnSuccess__Message)-1);
+        serialModeTX1();
+    #endif
+}
 
 static unsigned char rampMessage_InsulationTestFailure__Message[] = "$$$insulfailed:";
 void rampMessage_InsulationTestFailure() {
@@ -1407,9 +1438,24 @@ void rampMessage_InsulationTestFailure() {
     }
     ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
     serialModeTX0();
+
+    #ifdef SERIAL_UART1_ENABLE
+        ringBuffer_WriteChars(&serialRB1_TX, rampMessage_InsulationTestFailure__Message, sizeof(rampMessage_InsulationTestFailure__Message)-1);
+        for(i = 0; i < 4; i=i+1) {
+            ringBuffer_WriteChar(&serialRB1_TX, ((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) ? 'F' : '-');
+        }
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
+    #endif
 }
 
 static unsigned char statusMessageOff_Msg[] = "$$$off\n";
 void statusMessageOff() {
     ringBuffer_WriteChars(&serialRB0_TX, statusMessageOff_Msg, sizeof(statusMessageOff_Msg)-1);
+    serialModeTX0();
+
+    #ifdef SERIAL_UART1_ENABLE
+        ringBuffer_WriteChars(&serialRB1_TX, statusMessageOff_Msg, sizeof(statusMessageOff_Msg)-1);
+        serialModeTX1();
+    #endif
 }
