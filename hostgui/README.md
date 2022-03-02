@@ -1,4 +1,4 @@
-# Python communication library and GUI utlity
+# Custom electron gun slow control Python communication library and GUI utlity
 
 __Work in progress__
 
