@@ -1,6 +1,7 @@
 import serial
 import threading
 import time
+import atexit
 
 from collections import deque
 
@@ -143,6 +144,7 @@ class ElectronGunControl:
         self.port = serial.Serial(portFile, baudrate=19200, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=30)
         self.thrProcessing = threading.Thread(target=self.communicationThreadMain)
         self.thrProcessing.start()
+        atexit.register(self.close)
 
         # Condition variable used to implement synchronous calls
         # for execution from jupyter notebook, synchronous simple scripts, etc.
@@ -171,6 +173,7 @@ class ElectronGunControl:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        atexit.unregister(self.close)
         if self.port:
             self.port.close()
             self.port = False
@@ -179,6 +182,7 @@ class ElectronGunControl:
             self.thrProcessing = False
 
     def close(self):
+        atexit.unregister(self.close)
         if self.port:
             self.port.close()
             self.port = False
