@@ -162,6 +162,11 @@ class ElectronGunControl:
         self.cbBeamon = None
         self.cbFilamentCurrentSet = None
 
+        # Currently introduce a delay to wait for the AVR board to reboot just in
+        # case the main USB port has been used. Not a really clean solution but
+        # it works and usually one does not reinitialize too often
+        sleep(10)
+
     def __enter__(self):
         return self
 
