@@ -163,6 +163,7 @@ class ElectronGunControl:
         self.cbInsulation = None
         self.cbBeamon = None
         self.cbFilamentCurrentSet = None
+        self.cbOff = None
 
         # Currently introduce a delay to wait for the AVR board to reboot just in
         # case the main USB port has been used. Not a really clean solution but
@@ -184,6 +185,11 @@ class ElectronGunControl:
     def close(self):
         atexit.unregister(self.close)
         if self.port:
+            try:
+                self.off(sync = True)
+            except Exception:
+                # Simply ignore all exceptions
+                pass
             self.port.close()
             self.port = False
         if self.thrProcessing:
@@ -358,6 +364,16 @@ class ElectronGunControl:
                     self.internal__signalCondition("filseta", newSetValue)
                 except ValueError:
                     pass
+        elif msg[0:len("off")] == "off":
+            if self.cbOff:
+                if type(self.cbOff) is list:
+                    for f in self.cbOff:
+                        if callable(f):
+                            f(self)
+                elif callable(self.cbOff):
+                    self.cbBeamon(self)
+
+            self.internal__signalCondition("off", True)
         else:
             print("Unknown message {}".format(msg))
 
