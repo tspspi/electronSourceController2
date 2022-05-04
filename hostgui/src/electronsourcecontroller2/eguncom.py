@@ -3,7 +3,7 @@ import threading
 import time
 import atexit
 
-print("Electron source controller: 0.0.6")
+print("Electron source controller: 0.0.7")
 
 from collections import deque
 
@@ -490,6 +490,10 @@ class ElectronGunControl:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         cmd = b'$$$off\n'
         self.port.write(cmd)
+        # Here we add a small delay to allow the serial buffer to be
+        # fully flushed before we terminate our process so we can make sure
+        # we really transmit the off condition
+        time.sleep(2)
 
     def setPSUPolarity(self, channel, polarity, *ignore, sync = False):
         if self.port == False:
@@ -525,7 +529,7 @@ class ElectronGunControl:
         elif channel == 4:
             cmd = b'$$$psuon4\n'
         else:
-            raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
+            raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
 
     def setPSUDisable(self, channel, *ignore, sync = False):
