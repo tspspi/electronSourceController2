@@ -198,7 +198,7 @@ static void handleOvercurrentDetection() {
     */
 
     for(i = 0; i < 4; i=i+1) {
-        if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
+        if((rampMode.vTargets[i] > 0) && (rampMode.vCurrent[i] > 0) && (psuStates[i].limitMode == psuLimit_Current)) {
             rampInsulationError();
             return;
         }
