@@ -3,6 +3,8 @@ import threading
 import time
 import atexit
 
+print("Electron source controller: 0.0.6")
+
 from collections import deque
 
 class ElectronGunRingbuffer:
