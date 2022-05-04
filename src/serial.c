@@ -700,6 +700,7 @@ static void handleSerial0Messages_CompleteMessage(
             sei();
         }
         a = serialADC2MilliampsFILA(a);
+        // a = serialAD7705CountToMilliamps(a);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, 'f');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1052,6 +1053,10 @@ void handleSerial0Messages() {
             psuStates[1].bOutputEnable = false;
             psuStates[2].bOutputEnable = false;
             psuStates[3].bOutputEnable = false;
+            setPSUVolts(0, 1);
+            setPSUVolts(0, 2);
+            setPSUVolts(0, 3);
+            setPSUVolts(0, 4);
             setFilamentOn(false);
             rampMode.mode = controllerRampMode__None;
             statusMessageOff();
@@ -1104,6 +1109,7 @@ void handleSerial0Messages() {
                 sei();
             }
             a = serialADC2MilliampsFILA(a);
+            // a = serialAD7705CountToMilliamps(a);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, 'f');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1311,9 +1317,11 @@ void handleSerial0Messages() {
             {
                 cli();
                 a = currentADC[8];
+                // a = ad7705CurrentCounts;
                 sei();
             }
             a = serialADC2MilliampsFILA(a);
+            // a = serialAD7705CountToMilliamps(a);
             ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
         }
 
