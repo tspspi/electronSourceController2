@@ -12,6 +12,10 @@
 #include "./psu.h"
 #include "./pwmout.h"
 
+/*
+    Ramp controller
+*/
+
 struct rampMode rampMode;
 
 void rampStart_InsulationTest() {
@@ -139,23 +143,6 @@ static void handleRamp() {
         }
         if((rampMode.vCurrent[0] != rampMode.vTargets[0]) || (rampMode.vCurrent[1] != rampMode.vTargets[1]) || (rampMode.vCurrent[2] != rampMode.vTargets[2]) || (rampMode.vCurrent[3] != rampMode.vTargets[3])) {
             if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_STEPDURATIONMILLIS) { return; }
-
-            #if 0
-                /*
-                    Check if any PSU is in CC mode ...
-                    We only check on ticks since during phase of increasing voltage current limiting may be triggered
-
-                    Note: Moved into handler that is always active for all PSUs
-                */
-
-                for(i = 0; i < 4; i=i+1) {
-                    if((rampMode.vTargets[i] != 0) && (psuStates[i].limitMode == psuLimit_Current)) {
-                        /* Insulation fault ... abort ... */
-                        rampInsulationError();
-                        return;
-                    }
-                }
-            #endif
 
             for(i = 0; i < 4; i=i+1) {
                 rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
