@@ -725,6 +725,8 @@ static void handleSerial0Messages_CompleteMessage(
         rampMode.mode = controllerRampMode__None;
     } else if(strCompare("beamon", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_BeamOn();
+    } else if(strCompare("reset", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        asm volatile ("jmp 0 \n");
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
@@ -1134,6 +1136,8 @@ void handleSerial0Messages() {
             rampMode.mode = controllerRampMode__None;
         } else if(strCompare("beamon", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
             rampStart_BeamOn();
+        } else if(strCompare("reset", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            asm volatile ("jmp 0 \n");
     #ifdef DEBUG
         } else if(strCompare("rawadc", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Deliver raw adc value of frist channel for testing purpose ... */
