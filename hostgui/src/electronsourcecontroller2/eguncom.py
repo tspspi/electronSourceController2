@@ -3,7 +3,7 @@ import threading
 import time
 import atexit
 
-print("Electron source controller: 0.0.7")
+print("Electron source controller: 0.0.8")
 
 from collections import deque
 
@@ -617,5 +617,26 @@ class ElectronGunControl:
         self.port.write(b'$$$beamon\n')
         if sync:
             return self.internal__waitForMessageFilter("beamon")
+        else:
+            return None
+
+    def reset(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$reset\n')
+        if sync:
+            time.sleep(10)
+            self.port.write(b'$$$id\n')
+            if sync:
+                return self.internal__waitForMessageFilter("id")
+            else:
+                return None
+
+    def jabber(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$$$$$$$$$$id\n')
+        if sync:
+            return self.internal__waitForMessageFilter("id")
         else:
             return None
