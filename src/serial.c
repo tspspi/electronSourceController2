@@ -718,6 +718,10 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[1].bOutputEnable = false;
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
+        setPSUVolts(0, 1);
+        setPSUVolts(0, 2);
+        setPSUVolts(0, 3);
+        setPSUVolts(0, 4);
         rampMode.mode = controllerRampMode__None;
     } else if(strCompare("beamon", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_BeamOn();
