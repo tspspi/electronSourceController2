@@ -146,6 +146,10 @@ class ElectronGunControl:
         self.port = serial.Serial(portFile, baudrate=19200, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=30)
         self.thrProcessing = threading.Thread(target=self.communicationThreadMain)
         self.thrProcessing.start()
+
+        self.defaultVoltages = [ 2018, 2020, 1808, 0 ]
+        self.currentVoltages = [ 0, 0, 0, 0 ]
+
         atexit.register(self.close)
 
         # Condition variable used to implement synchronous calls
@@ -170,7 +174,7 @@ class ElectronGunControl:
         # Currently introduce a delay to wait for the AVR board to reboot just in
         # case the main USB port has been used. Not a really clean solution but
         # it works and usually one does not reinitialize too often
-        time.sleep(10)
+        #time.sleep(10)
 
     def __enter__(self):
         return self
