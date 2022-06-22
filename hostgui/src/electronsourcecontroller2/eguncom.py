@@ -499,6 +499,12 @@ class ElectronGunControl:
         # we really transmit the off condition
         time.sleep(2)
 
+    def noprotection(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        cmd = b'$$$noprotection\n'
+        self.port.write(cmd)
+
     def setPSUPolarity(self, channel, polarity, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
