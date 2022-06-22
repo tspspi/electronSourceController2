@@ -282,6 +282,24 @@ static enum egunError egunSerial__electronGun_Off(
     }
 }
 
+static char egunSerial__electronGun_NoProtection__Message[] = "$$$noprotection\n";
+static enum egunError egunSerial__electronGun_NoProtection(
+    struct electronGun* lpSelf
+) {
+    struct egunSerial_Impl* lpThis;
+    int r;
+
+    if(lpSelf == NULL) { return egunE_InvalidParam; }
+
+    lpThis = (struct egunSerial_Impl*)(lpSelf->lpReserved);
+    r = write(lpThis->hSerialPort, egunSerial__electronGun_NoProtection__Message, strlen(egunSerial__electronGun_NoProtection__Message));
+    if(r != strlen(egunSerial__electronGun_NoProtection__Message)) {
+        return egunE_Failed;
+    } else {
+        return egunE_Ok;
+    }
+}
+
 static char egunSerial__electronGun_SetPSUPolarity__MessageFmt[] = "$$$psupol%u%c\n";
 static enum egunError egunSerial__electronGun_SetPSUPolarity(
     struct electronGun* lpSelf,
@@ -474,6 +492,7 @@ struct electronGun_VTBL egunSerial_VTBL = {
     &egunSerial__electronGun_GetPSUModes,
 
     &egunSerial__electronGun_Off,
+    &egunSerial__electronGun_NoProtection,
 
     &egunSerial__electronGun_SetPSUPolarity,
     &egunSerial__electronGun_SetPSUEnabled,

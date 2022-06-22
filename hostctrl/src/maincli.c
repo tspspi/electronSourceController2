@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
                 continue;
             } else if(strcmp(argv[i], "id") == 0) {
             } else if(strcmp(argv[i], "off") == 0) {
+            } else if(strcmp(argv[i], "noprotection") == 0) {
             } else if(strcmp(argv[i], "catgetv") == 0) {
             } else if(strcmp(argv[i], "catgeta") == 0) {
             } else if(strcmp(argv[i], "catgetpol") == 0) {
@@ -310,6 +311,9 @@ int main(int argc, char* argv[]) {
             } else if(strcmp(argv[i], "off") == 0) {
                 printf("Disabling supplies\n");
                 lpEgun->vtbl->off(lpEgun);
+            } else if(strcmp(argv[i], "noprotection") == 0) {
+                printf("Disabling overcurrent protection\n");
+                lpEgun->vtbl->noProtection(lpEgun);
             } else if(strcmp(argv[i], "catgetv") == 0) {
                 printf("Requesting cathode voltage\n");
                 lpEgun->vtbl->getCurrentVoltage(lpEgun, 1);
