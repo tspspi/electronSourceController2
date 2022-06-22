@@ -48,6 +48,7 @@ enum controllerRampMode {
 };
 
 extern struct rampMode rampMode;
+extern int protectionEnabled;
 
 struct rampMode {
     /*

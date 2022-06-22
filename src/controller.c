@@ -16,6 +16,7 @@
     Ramp controller
 */
 
+int protectionEnabled;
 struct rampMode rampMode;
 
 void rampStart_InsulationTest() {
@@ -184,10 +185,12 @@ static void handleOvercurrentDetection() {
         case disable everything and signal fault ...
     */
 
-    for(i = 0; i < 4; i=i+1) {
-        if((rampMode.vTargets[i] > 0) && (rampMode.vCurrent[i] > 0) && (psuStates[i].limitMode == psuLimit_Current)) {
-            rampInsulationError();
-            return;
+    if(protectionEnabled != 0) {
+        for(i = 0; i < 4; i=i+1) {
+            if((rampMode.vTargets[i] > 0) && (rampMode.vCurrent[i] > 0) && (psuStates[i].limitMode == psuLimit_Current)) {
+                rampInsulationError();
+                return;
+            }
         }
     }
 }
@@ -197,6 +200,8 @@ int main() {
     #ifndef FRAMAC_SKIP
 		cli();
 	#endif
+
+    protectionEnabled = 1;
 
     /*
         Initialize state (power on reset)
