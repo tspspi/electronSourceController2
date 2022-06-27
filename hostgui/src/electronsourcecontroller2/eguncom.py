@@ -138,7 +138,17 @@ class ElectronGunControl:
     POLARITY_POS = b'p'
     POLARITY_NEG = b'n'
 
-    def __init__(self, portFile = '/dev/ttyU0'):
+    def __init__(self, portFile = None):
+        if not portFile:
+            portFile = '/dev/ttyU0'
+            try:
+                from quakesrctrl import config
+                if VISA_ID_EBEAM:
+                    portFile = VISA_ID_EBEAM
+            except Exception:
+                portFile = '/dev/ttyU0'
+                pass
+
         self.bufferInput = ElectronGunRingbuffer()
 
         self.port = False
