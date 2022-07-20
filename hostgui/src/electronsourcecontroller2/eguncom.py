@@ -458,6 +458,18 @@ class ElectronGunControl:
         else:
             return None
 
+    def quakEstimateBeamCurrent(self):
+        # Power supplies:
+        #   1   Cathode
+        #   2   Whenelt
+        #   3   Focus
+        #   4   unused
+        currentCathode = self.getPSUCurrent(1, sync = True)
+        currentWhenelt = self.getPSUCurrent(2, sync = True)
+        currentFocus = self.getPSUCurrent(3, sync = True)
+
+        return currentCathode + currentWhenelt + currentFocus
+
     def getPSUCurrent(self, channel, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
