@@ -3,7 +3,7 @@ import threading
 import time
 import atexit
 
-print("Electron source controller: 0.0.13")
+print("Electron source controller: 0.0.14")
 
 from collections import deque
 
@@ -459,6 +459,9 @@ class ElectronGunControl:
             return None
 
     def quakEstimateBeamCurrent(self):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+
         # Power supplies:
         #   1   Cathode
         #   2   Whenelt
