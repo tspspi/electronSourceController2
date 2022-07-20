@@ -3,7 +3,7 @@ import threading
 import time
 import atexit
 
-print("Electron source controller: 0.0.11")
+print("Electron source controller: 0.0.13")
 
 from collections import deque
 
