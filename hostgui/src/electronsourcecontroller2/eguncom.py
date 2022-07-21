@@ -143,8 +143,8 @@ class ElectronGunControl:
             portFile = '/dev/ttyU0'
             try:
                 from quakesrctrl import config
-                if VISA_ID_EBEAM:
-                    portFile = VISA_ID_EBEAM
+                if config.VISA_ID_EBEAM:
+                    portFile = config.VISA_ID_EBEAM
             except Exception:
                 portFile = '/dev/ttyU0'
                 pass
