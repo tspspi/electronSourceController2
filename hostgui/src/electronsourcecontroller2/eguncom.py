@@ -3,7 +3,7 @@ import threading
 import time
 import atexit
 
-print("Electron source controller: 0.0.14")
+print("Electron source controller: 0.0.16")
 
 from collections import deque
 
@@ -156,6 +156,7 @@ class ElectronGunControl:
         self.port = serial.Serial(portFile, baudrate=19200, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=30)
         self.thrProcessing = threading.Thread(target=self.communicationThreadMain)
         self.thrProcessing.start()
+        self.stabilizationDelay = 5
 
         self.defaultVoltages = [ 2018, 2020, 1808, 0 ]
         self.currentVoltages = [ 0, 0, 0, 0 ]
@@ -454,7 +455,10 @@ class ElectronGunControl:
             raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
         if sync:
-            return self.internal__waitForMessageFilter("v{}".format(channel))
+            res = self.internal__waitForMessageFilter("v{}".format(channel))
+            if self.stabilizationDelay:
+                time.sleep(self.stabilizationDelay)
+            return res
         else:
             return None
 
@@ -490,7 +494,10 @@ class ElectronGunControl:
         self.port.write(cmd)
 
         if sync:
-            return self.internal__waitForMessageFilter("a{}".format(channel))
+            res = self.internal__waitForMessageFilter("a{}".format(channel))
+            if self.stabilizationDelay:
+                time.sleep(self.stabilizationDelay)
+            return res
         else:
             return None
 
@@ -551,6 +558,9 @@ class ElectronGunControl:
         cmd = cmd + polarity + b'\n'
         self.port.write(cmd)
 
+        if sync:
+            time.sleep(20)
+
     def setPSUEnable(self, channel, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -567,6 +577,9 @@ class ElectronGunControl:
             raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
 
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
+
     def setPSUDisable(self, channel, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -582,6 +595,9 @@ class ElectronGunControl:
         else:
             raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
+
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
 
     def setPSUVoltage(self, channel, voltage, *ignore, sync = False):
         if self.port == False:
@@ -609,6 +625,9 @@ class ElectronGunControl:
         cmd = cmd + b'\n'
         self.port.write(cmd)
 
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
+
     def setFilamentCurrent(self, currentMa, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -623,6 +642,9 @@ class ElectronGunControl:
         cmd = b'$$$setfila' + bytes(str(currentMa), encoding="ascii") + b'\n'
         self.port.write(cmd)
 
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
+
     def setFilamentOn(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -630,12 +652,18 @@ class ElectronGunControl:
         cmd = b'$$$filon\n'
         self.port.write(cmd)
 
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
+
     def setFilamentOff(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
 
         cmd = b'$$$filoff\n'
         self.port.write(cmd)
+
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
 
     def runInsulationTest(self, *ignore, sync = False):
         if self.port == False:
