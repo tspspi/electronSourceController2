@@ -452,7 +452,7 @@ class ElectronGunControl:
         elif channel == 4:
             cmd = b'$$$psugetv4\n'
         else:
-            raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
+            raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
         if sync:
             res = self.internal__waitForMessageFilter("v{}".format(channel))
