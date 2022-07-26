@@ -2,6 +2,7 @@ import serial
 import threading
 import time
 import atexit
+import json
 
 print("Electron source controller: 0.0.16")
 
@@ -703,3 +704,268 @@ class ElectronGunControl:
             return self.internal__waitForMessageFilter("id")
         else:
             return None
+
+# MQTT implementation
+
+import paho.mqtt.client as mqtt
+import mqttpattern
+
+class ElectronGunControlMQTT:
+    def __init__(self, broker=None, port=1883, user=None, password=None, basetopic=None, Sync = True):
+        if not broker:
+            try:
+                from quakesrctrl import config
+                if config.MQTT_EBEAM:
+                    broker = config.MQTT_EBEAM['broker']
+                    port = config.MQTT_EBEAM['port']
+                    user = config.MQTT_EBEAM['user']
+                    password = config.MQTT_EBEAM['password']
+                    basetopic = config.MQTT_EBEAM['basetopic']
+            except Exception:
+                pass
+
+        if (not broker) or (not basetopic):
+            raise ElectronGunInvalidParameterException("At least broker and basetopic have to be specified")
+
+        if basetopic[-1] != '/':
+            basetopic = basetopic + '/'
+        self._basetopic = basetopic
+
+        self.messageFilter = None
+        self.messageResponse = None
+        self.messageConditionVariable = threading.Condition()
+
+        self.cbIdentify = None
+        self.cbVoltage = None
+        self.cbCurrent = None
+        self.cbPSUMode = None
+        self.cbFilamentCurrent = None
+        self.cbInsulation = None
+        self.cbBeamon = None
+        self.cbFilamentCurrentSet = None
+        self.cbOff = None
+
+        self.mqttPattern = mqttpattern.MQTTPatternMatcher()
+        self.mqttPattern.registerHandler(f"{self._basetopic}egun/id", self._msghandler_Id)
+        self.mqttPattern.registerHandler(f"{self._basetopic}egun/voltage", self._msghandler_Voltage)
+        self.mqttPattern.registerHandler(f"{self._basetopic}egun/current", self._msghandler_Current)
+
+        self.mqtt = mqtt.Client()
+        self.mqtt.on_connect = self._mqtt_on_connect
+        self.mqtt.on_message = self._mqtt_on_message
+        if user:
+            self.mqtt.username_pw_set(user, password)
+        self.mqtt.connect(broker, port)
+        self.mqtt.loop_start()
+
+        while Sync:
+            if self.internal__waitForMessageFilter("connect"):
+                break
+
+        atexit.register(self.close)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        atexit.unregister(self.close)
+        if self.mqtt:
+            self.mqtt.disconnect()
+            self.mqtt = None
+
+    def close():
+        atexit.unregister(self.close)
+        if self.mqtt:
+            self.mqtt.disconnect()
+            self.mqtt = None
+
+    def internal__waitForMessageFilter(self, filter):
+        self.messageConditionVariable.acquire()
+
+        self.messageFilter = filter
+
+        # Now wait till we get a response from our processing thread ...
+        while self.messageResponse == None:
+            self.messageConditionVariable.wait()
+        # Reset message filter, copy and release response ...
+        self.messageFilter = None
+        retval = self.messageResponse
+        self.messageResponse = None
+
+        # Release ...
+        self.messageConditionVariable.release()
+        return retval
+
+    def internal__signalCondition(self, messageType, payload):
+        self.messageConditionVariable.acquire()
+        if messageType != self.messageFilter:
+            self.messageConditionVariable.release()
+            return
+        self.messageResponse = payload
+        self.messageConditionVariable.notify_all()
+        self.messageConditionVariable.release()
+
+    def id(self, *ignore, sync = False):
+        if not self.mqtt:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self._mqtt_publish("egun/id/request")
+        if sync:
+            return self.internal__waitForMessageFilter("id")
+        else:
+            return None
+
+    def _msghandler_Id(self, message):
+        if self.cbIdentify:
+            if type(self.cbIdentify) is list:
+                for f in self.cbIdentify:
+                    if callable(f):
+                        f(self, message.payload['version'], message.payload['revision'])
+            elif callable(self.cbIdentify):
+                self.cbIdentify(self, message.payload['version'], message.payload['revision'])
+
+        self.internal__signalCondition("id", { 'version' : message.payload['version'], 'revision' : message.payload['revision'] })
+
+    def getPSUVoltage(self, channel, *ignore, sync = False):
+        if not self.mqtt:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if (channel < 1) or (channel > 4):
+            raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
+
+        self._mqtt_publish(f"egun/voltage/request", { 'channel' : channel })
+
+        if sync:
+            res = self.internal__waitForMessageFilter("v{}".format(channel))
+            return res
+        else:
+            return None
+
+    def _msghandler_Voltage(self, message):
+        channel = message.payload['channel']
+        voltage = message.payload['voltage']
+
+        if self.cbVoltage:
+            if type(self.cbVoltage) is list:
+                for f in self.cbVoltage:
+                    if callable(f):
+                        f(self, channel, voltage)
+            elif callable(self.cbVoltage):
+                self.cbVoltage(self, channel, voltage)
+        self.internal__signalCondition("v{}".format(channel), voltage )
+
+    def quakEstimateBeamCurrent(self):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+
+        # Power supplies:
+        #   1   Cathode
+        #   2   Whenelt
+        #   3   Focus
+        #   4   unused
+        currentCathode = self.getPSUCurrent(1, sync = True)
+        currentWhenelt = self.getPSUCurrent(2, sync = True)
+        currentFocus = self.getPSUCurrent(3, sync = True)
+
+        return currentCathode + currentWhenelt + currentFocus
+
+    def getPSUCurrent(self, channel, *ignore, sync = False):
+        if not self.mqtt:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if (channel < 1) or (channel > 4):
+            raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
+
+        self._mqtt_publish(f"egun/current/request", { 'channel' : channel })
+
+        if sync:
+            res = self.internal__waitForMessageFilter("a{}".format(channel))
+            return res
+        else:
+            return None
+
+    def _msghandler_Current(self, message):
+        channel = message.payload['channel']
+        current = message.payload['current']
+
+        if self.cbCurrent:
+            if type(self.cbCurrent) is list:
+                for f in self.cbCurrent:
+                    if callable(f):
+                        f(self, channel, current)
+            elif callable(self.cbCurrent):
+                self.cbVoltage(self, channel, current)
+        self.internal__signalCondition("a{}".format(channel), current)
+
+    def getPSUModes(self, *ignore, sync = False):
+        pass
+
+    def getFilamentCurrent(self, *ignore, sync = False):
+        pass
+
+    def off(self, *ignore, sync = False):
+        pass
+
+    def noprotection(self, *ignore, sync = False):
+        pass
+
+    def setPSUPolarity(self, channel, polarity, *ignore, sync = False):
+        pass
+
+    def setPSUEnable(self, channel, *ignore, sync = False):
+        pass
+
+    def setPSUDisable(self, channel, *ignore, sync = False):
+        pass
+
+    def setPSUVoltage(self, channel, voltage, *ignore, sync = False):
+        pass
+
+    def setFilamentCurrent(self, currentMa, *ignore, sync = False):
+        pass
+
+    def setFilamentOn(self, *ignore, sync = False):
+        pass
+
+    def setFilamentOff(self, *ignore, sync = False):
+        pass
+
+    def runInsulationTest(self, *ignore, sync = False):
+        pass
+
+    def beamOn(self, *ignore, sync = False):
+        pass
+
+    def reset(self, *ignore, sync = False):
+        pass
+
+    def _mqtt_publish(self, topic, message=None, prependBaseTopic=True, retain=False):
+        if not self.mqtt:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+
+        if isinstance(message, dict):
+            message = json.dumps(message)
+
+        if prependBaseTopic:
+            topic = self._basetopic + topic
+
+        try:
+            if not (message is None):
+                self.mqtt.publish(topic, payload=message, qos=0, retain=retain)
+            else:
+                self.mqtt.publish(topic, qos=0, retain=retain)
+            return True
+        except Exception as e:
+            return False
+
+    def _mqtt_on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            self.internal__signalCondition("connect", { 'success' : True })
+            client.subscribe(self._basetopic+"#")
+        else:
+            self.internal__signalCondition("connect", { 'success' : False })
+
+    def _mqtt_on_message(self, client, userdata, msg):
+        try:
+            msg.payload = json.loads(str(msg.payload.decode('utf-8', 'ignore')))
+        except:
+            # Ignore if we don't have a JSON payload
+            pass
+        self.mqttPattern.callHandlers(msg.topic, msg)
