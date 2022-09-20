@@ -497,7 +497,7 @@ class ElectronGunControl:
         currentWhenelt = self.getPSUCurrent(2, sync = True)
         currentFocus = self.getPSUCurrent(3, sync = True)
 
-        return currentCathode + currentWhenelt + currentFocus
+        return currentCathode - currentWhenelt - currentFocus
 
     def getPSUCurrent(self, channel, *ignore, sync = False):
         if self.port == False:
