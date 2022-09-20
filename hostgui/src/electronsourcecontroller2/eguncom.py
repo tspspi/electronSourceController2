@@ -139,7 +139,7 @@ class ElectronGunControl:
     POLARITY_POS = b'p'
     POLARITY_NEG = b'n'
 
-    def __init__(self, portFile = None):
+    def __init__(self, portFile = None, commandRetries = 3):
         if not portFile:
             portFile = '/dev/ttyU0'
             try:
@@ -151,6 +151,8 @@ class ElectronGunControl:
                 pass
 
         self.bufferInput = ElectronGunRingbuffer()
+
+        self._commandRetries = commandRetries
 
         self.port = False
         self.portFile = portFile
@@ -220,9 +222,28 @@ class ElectronGunControl:
         self.messageFilter = filter
 
         # Now wait till we get a response from our processing thread ...
+        remainingRetries = int(self._commandRetries)
+        if remainingRetries is None:
+            remainingRetries = 0
+        elif remainingRetries < 0:
+            remainingRetries = 0
+
         while self.messageResponse == None:
-            self.messageConditionVariable.wait()
+            if not self.messageConditionVariable.wait(timeout = 10):
+                print(f"Timeout while waiting for {self.messageFilter} (Retries remaining: {remainingRetries})")
+                if (remainingRetries > 0) and (self._lastcommand is not None):
+                    # Retry command ...
+                    self.port.write(self._lastcommand)
+                    remainingRetries = remainingRetries - 1
+                else:
+                    self.jabber(sync = False)
+                    self.messageFilter = None
+                    self.messageResponse = None
+                    self._lastcommand = None
+                    self.messageConditionVariable.release()
+                    return None
         # Reset message filter, copy and release response ...
+        self._lastcommand = None
         self.messageFilter = None
         retval = self.messageResponse
         self.messageResponse = None
@@ -435,6 +456,7 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$id\n')
+        self._lastcommand = b'$$$id\n'
         if sync:
             return self.internal__waitForMessageFilter("id")
         else:
@@ -455,10 +477,9 @@ class ElectronGunControl:
         else:
             raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
+        self._lastcommand = cmd
         if sync:
             res = self.internal__waitForMessageFilter("v{}".format(channel))
-            if self.stabilizationDelay:
-                time.sleep(self.stabilizationDelay)
             return res
         else:
             return None
@@ -493,11 +514,10 @@ class ElectronGunControl:
         else:
             raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if sync:
             res = self.internal__waitForMessageFilter("a{}".format(channel))
-            if self.stabilizationDelay:
-                time.sleep(self.stabilizationDelay)
             return res
         else:
             return None
@@ -507,6 +527,7 @@ class ElectronGunControl:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         cmd = b'$$$psumode\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
         if sync:
             return self.internal__waitForMessageFilter("psustate")
         else:
@@ -517,6 +538,7 @@ class ElectronGunControl:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         cmd = b'$$$fila\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
         if sync:
             return self.internal__waitForMessageFilter("af")
         else:
@@ -527,6 +549,7 @@ class ElectronGunControl:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         cmd = b'$$$off\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
         # Here we add a small delay to allow the serial buffer to be
         # fully flushed before we terminate our process so we can make sure
         # we really transmit the off condition
@@ -537,6 +560,7 @@ class ElectronGunControl:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         cmd = b'$$$noprotection\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
     def setPSUPolarity(self, channel, polarity, *ignore, sync = False):
         if self.port == False:
@@ -558,6 +582,7 @@ class ElectronGunControl:
 
         cmd = cmd + polarity + b'\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if sync:
             time.sleep(20)
@@ -577,6 +602,7 @@ class ElectronGunControl:
         else:
             raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -596,6 +622,7 @@ class ElectronGunControl:
         else:
             raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -625,6 +652,7 @@ class ElectronGunControl:
 
         cmd = cmd + b'\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -642,6 +670,7 @@ class ElectronGunControl:
 
         cmd = b'$$$setfila' + bytes(str(currentMa), encoding="ascii") + b'\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -652,6 +681,7 @@ class ElectronGunControl:
 
         cmd = b'$$$filon\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -662,6 +692,7 @@ class ElectronGunControl:
 
         cmd = b'$$$filoff\n'
         self.port.write(cmd)
+        self._lastcommand = cmd
 
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
@@ -670,6 +701,7 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$insul\n')
+        self._lastcommand = b'$$$insul\n'
         if sync:
             return self.internal__waitForMessageFilter("insulok")
         else:
@@ -679,6 +711,7 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$beamon\n')
+        self._lastcommand = b'$$$beamon\n'
         if sync:
             return self.internal__waitForMessageFilter("beamon")
         else:
@@ -688,9 +721,11 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$reset\n')
+        self._lastcommand = b'$$$reset\n'
         if sync:
             time.sleep(10)
             self.port.write(b'$$$id\n')
+            self._lastcommand = b'$$$id\n'
             if sync:
                 return self.internal__waitForMessageFilter("id")
             else:
