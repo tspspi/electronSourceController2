@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-print("Electron source controller: 0.0.16")
+print("Electron source controller: 0.0.17")
 
 from collections import deque
 
@@ -954,7 +954,18 @@ class ElectronGunControlMQTT:
         pass
 
     def setFilamentCurrent(self, currentMa, *ignore, sync = False):
-        pass
+        if not self.mqtt:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if (currentMa < 0) or (currentMa > 200):
+            raise ValueError("Current is out of range")
+
+        self._mqtt_publish(f"egun/filamentcurrent/set", { 'current' : currentMa })
+
+        if sync:
+            res = self.internal__waitForMessageFilter("a{}".format(channel))
+            return res
+        else:
+            return None
 
     def setFilamentOn(self, *ignore, sync = False):
         pass
