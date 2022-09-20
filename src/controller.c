@@ -19,8 +19,36 @@
 int protectionEnabled;
 struct rampMode rampMode;
 
+/*@
+    assigns rampMode.clkLastTick;
+    assigns rampMode.mode;
+    assigns rampMode.vTargets[0];
+    assigns rampMode.vTargets[1];
+    assigns rampMode.vTargets[2];
+    assigns rampMode.vTargets[3];
+    assigns rampMode.aTargetFilament;
+    assigns rampMode.vCurrent[0];
+    assigns rampMode.vCurrent[1];
+    assigns rampMode.vCurrent[2];
+    assigns rampMode.vCurrent[3];
+    assigns rampMode.filamentCurrent;
+
+    ensures rampMode.mode == controllerRampMode__InsulationTest;
+    ensures rampMode.vTargets[0] == CONTROLLER_RAMP_TARGETV__K;
+    ensures rampMode.vTargets[1] == CONTROLLER_RAMP_TARGETV__W;
+    ensures rampMode.vTargets[2] == CONTROLLER_RAMP_TARGETV__FOC;
+    ensures rampMode.vTargets[3] == 0;
+    ensures rampMode.aTargetFilament == 0;
+    ensures (rampMode.vCurrent[0] == 0) && (rampMode.vCurrent[1] == 0) && (rampMode.vCurrent[2] == 0);
+    ensures rampMode.filamentCurrent == 0;
+*/
 void rampStart_InsulationTest() {
     unsigned long int i;
+    /*@
+        loop invariant 1 <= i <= 5;
+        loop assigns psuStates[i-1].bOutputEnable;
+        loop variant 5-i;
+    */
     for(i = 1; i < 5; i=i+1) {
         psuStates[i-1].bOutputEnable = false;
         setPSUVolts(0, i);
@@ -46,6 +74,11 @@ void rampStart_InsulationTest() {
 
 void rampStart_BeamOn() {
     unsigned long int i;
+    /*@
+        loop invariant 1 <= i <= 5;
+        loop assigns psuStates[i-1].bOutputEnable;
+        loop variant 5-i;
+    */
     for(i = 1; i < 5; i=i+1) {
         psuStates[i-1].bOutputEnable = false;
         setPSUVolts(0, i);
@@ -70,6 +103,14 @@ void rampStart_BeamOn() {
     setFilamentPWM(0);
 }
 
+/*@
+    assigns psuStates[0 .. 3].bOutputEnable;
+    assigns rampMode.mode;
+
+    ensures \forall int i; 0 < i < 4 ==>
+        psuStates[i].bOutputEnable == false;
+    ensures rampMode.mode == controllerRampMode__None;
+*/
 static void rampInsulationError() {
     /*
         Write message
@@ -133,6 +174,12 @@ static void handleRamp() {
             if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_INITDURATION) { return; }
 
             /* We start the sequence by setting voltage and PSU enable ... */
+            /*@
+                loop invariant 0 <= i <= 4;
+                loop assigns rampMode.vCurrent[0 .. 3];
+                loop assigns psuStates[0 .. 3].bOutputEnable;
+                loop variant 4-i;
+            */
             for(i = 0; i < 4; i=i+1) {
                 rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
                 setPSUVolts(rampMode.vCurrent[i], i+1);
@@ -145,6 +192,11 @@ static void handleRamp() {
         if((rampMode.vCurrent[0] != rampMode.vTargets[0]) || (rampMode.vCurrent[1] != rampMode.vTargets[1]) || (rampMode.vCurrent[2] != rampMode.vTargets[2]) || (rampMode.vCurrent[3] != rampMode.vTargets[3])) {
             if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_STEPDURATIONMILLIS) { return; }
 
+            /*@
+                loop invariant 0 <= i <= 4;
+                loop assigns rampMode.vCurrent[0 .. 3];
+                loop variant 4-i;
+            */
             for(i = 0; i < 4; i=i+1) {
                 rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
                 setPSUVolts(rampMode.vCurrent[i], i+1);

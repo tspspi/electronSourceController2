@@ -131,15 +131,6 @@ void setPSUMicroamps(
     }
 }
 
-#if 0
-void setFilamentVoltage(
-    uint16_t volts
-) {
-    uint16_t dutyCycleOn = (uint16_t)(((double)volts) / PWM_FILA_VPERDIV);
-    pwmoutOnCycles[8] = dutyCycleOn/8;
-}
-#endif
-
 void setFilamentPWM(
     uint16_t pwmCycles
 ) {

@@ -20,8 +20,10 @@ static volatile unsigned long int systemMonotonicOverflowCnt   = 0;
 
 /*@
         assigns systemMillis, systemMilliFractional, systemMonotonicOverflowCnt;
-*/
 
+        ensures (systemMonotonicOverflowCnt == \old(systemMonotonicOverflowCnt)+1)
+                || (systemMonotonicOverflowCnt == 0);
+*/
 ISR(TIMER0_OVF_vect) {
         unsigned long int m, f;
 
@@ -42,6 +44,9 @@ ISR(TIMER0_OVF_vect) {
         systemMilliFractional = f;
 }
 
+/*@
+        assigns \nothing;
+*/
 unsigned long int micros() {
         uint8_t srOld = SREG;
         unsigned long int overflowCounter;
@@ -65,8 +70,12 @@ unsigned long int micros() {
         return ((overflowCounter << 8) + timerCounter) * (64L / (F_CPU / 1000000L));
 }
 
+/*@
+        requires millisecs >= 0;
+
+        assigns \nothing;
+*/
 void delay(unsigned long millisecs) {
-        //uint16_t lastMicro;
         unsigned int lastMicro;
         /*
                 Busy waiting the desired amount of milliseconds ... by
@@ -74,8 +83,12 @@ void delay(unsigned long millisecs) {
         */
         lastMicro = (unsigned int)micros();
         /*@
+                loop invariant millisecs >= 0;
+
                 loop assigns lastMicro;
                 loop assigns millisecs;
+
+                loop variant millisecs;
         */
         while(millisecs > 0) {
                 // uint16_t curMicro = (uint16_t)micros();
