@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-print("Electron source controller: 0.0.17")
+print("Electron source controller: 0.0.18")
 
 from collections import deque
 
