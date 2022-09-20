@@ -23,11 +23,21 @@
             0.0048828125 <-> 0.003173828125 kV = 3.1738 V
                          <-> 0.0009765625 mA = 0.9765625 uA
 */
+/*@
+    requires (adcCounts >= 0) && (adcCounts < 1024);
+    assigns \nothing;
+    ensures \result == (uint16_t)(3.221407 * adcCounts);
+*/
 static inline uint16_t serialADC2VoltsHCP(
     uint16_t adcCounts
 ) {
     return (uint16_t)((double)(adcCounts) * 3.1738 * 1.015);
 }
+/*@
+    requires (adcCounts >= 0) && (adcCounts < 1024);
+    assigns \nothing;
+    ensures \result == (uint16_t)(9.765625 * adcCounts);
+*/
 static inline uint16_t serialADC2TenthMicroampsHCP(
     uint16_t adcCounts
 ) {
@@ -48,16 +58,95 @@ static inline uint16_t serialADC2MilliampsFILA(
 /*
     Ringbuffer utilis
 */
+/*@
+    predicate acsl_serialbuffer_valid(struct ringBuffer* lpBuf) =
+        \valid(lpBuf)
+        && \valid(&(lpBuf->dwHead))
+        && \valid(&(lpBuf->dwTail))
+        && (lpBuf->dwHead >= 0) && (lpBuf->dwHead < SERIAL_RINGBUFFER_SIZE)
+        && (lpBuf->dwTail >= 0) && (lpBuf->dwTail < SERIAL_RINGBUFFER_SIZE);
+*/
+/*@
+    requires lpBuf != NULL;
+    requires \valid(lpBuf);
+    requires \valid(&(lpBuf->dwHead));
+    requires \valid(&(lpBuf->dwTail));
+
+    assigns lpBuf->dwHead;
+    assigns lpBuf->dwTail;
+
+    ensures lpBuf->dwHead == 0;
+    ensures lpBuf->dwTail == 0;
+    ensures acsl_serialbuffer_valid(lpBuf);
+*/
 static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
     lpBuf->dwHead = 0;
     lpBuf->dwTail = 0;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+
+    assigns \nothing;
+
+    ensures (\result == true) && (\result == false);
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior isDataAvailable:
+        assumes lpBuf->dwHead != lpBuf->dwTail;
+        ensures \result == true;
+    behavior noDataAvailable:
+        assumes lpBuf->dwHead == lpBuf->dwTail;
+        ensures \result == false;
+
+    disjoint behaviors isDataAvailable, noDataAvailable;
+    complete behaviors isDataAvailable, noDataAvailable;
+*/
 static inline bool ringBuffer_Available(volatile struct ringBuffer* lpBuf) {
     return (lpBuf->dwHead != lpBuf->dwTail) ? true : false;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+
+    assigns \nothing;
+
+    ensures (\result == true) || (\result == false);
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior noSpaceAvailable:
+        assumes ((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) == lpBuf->dwTail;
+        ensures \result == false;
+    behavior spaceAvailable:
+        assumes ((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail;
+        ensures \result == true;
+
+    disjoint behaviors noSpaceAvailable, spaceAvailable;
+    complete behaviors noSpaceAvailable, spaceAvailable;
+*/
 static inline bool ringBuffer_Writable(volatile struct ringBuffer* lpBuf) {
     return (((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) ? true : false;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+
+    assigns \nothing;
+
+    ensures \result >= 0;
+    ensures \result < SERIAL_RINGBUFFER_SIZE;
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior noWrapping:
+        assumes lpBuf->dwHead >= lpBuf->dwTail;
+        ensures \result == (lpBuf->dwTail - lpBuf->dwHead);
+    behavior wrapping:
+        assumes lpBuf->dwHead < lpBuf->dwTail;
+        ensures \result == (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead;
+
+    disjoint behaviors noWrapping, wrapping;
+    complete behaviors noWrapping, wrapping;
+*/
 static inline unsigned long int ringBuffer_AvailableN(volatile struct ringBuffer* lpBuf) {
     if(lpBuf->dwHead >= lpBuf->dwTail) {
         return lpBuf->dwHead - lpBuf->dwTail;
@@ -65,10 +154,54 @@ static inline unsigned long int ringBuffer_AvailableN(volatile struct ringBuffer
         return (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead;
     }
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+
+    assigns \nothing;
+
+    ensures \result >= 0;
+    ensures \result < SERIAL_RINGBUFFER_SIZE;
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior noWrapping:
+        assumes lpBuf->dwHead >= lpBuf->dwTail;
+        ensures \result == SERIAL_RINGBUFFER_SIZE - (lpBuf->dwTail - lpBuf->dwHead) - 1;
+    behavior wrapping:
+        assumes lpBuf->dwHead < lpBuf->dwTail;
+        ensures \result == SERIAL_RINGBUFFER_SIZE - ((SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead) - 1;
+
+    disjoint behaviors noWrapping, wrapping;
+    complete behaviors noWrapping, wrapping;
+*/
 static inline unsigned long int ringBuffer_WriteableN(volatile struct ringBuffer* lpBuf) {
     return SERIAL_RINGBUFFER_SIZE - ringBuffer_AvailableN(lpBuf);
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
 
+    ensures (\result >= 0) && (\result <= 0xFF);
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior emptyBuffer:
+        assumes lpBuf->dwHead == lpBuf->dwTail;
+
+        assigns \nothing;
+
+        ensures \result == 0x00;
+        ensures lpBuf->dwTail == \old(lpBuf->dwTail);
+    behavior availableData:
+        assumes lpBuf->dwHead != lpBuf->dwTail;
+
+        assigns lpBuf->dwTail;
+
+        ensures \result == lpBuf->buffer[\old(lpBuf->dwTail)];
+        ensures lpBuf->dwTail == ((\old(lpBuf->dwTail)+1) % SERIAL_RINGBUFFER_SIZE);
+
+    disjoint behaviors emptyBuffer, availableData;
+    complete behaviors emptyBuffer, availableData;
+*/
 static unsigned char ringBuffer_ReadChar(volatile struct ringBuffer* lpBuf) {
     char t;
 
@@ -81,6 +214,28 @@ static unsigned char ringBuffer_ReadChar(volatile struct ringBuffer* lpBuf) {
 
     return t;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+
+    assigns \nothing;
+
+    ensures (\result >= 0) && (\result <= 0xFF);
+    ensures acsl_serialbuffer_valid(lpBuf);
+    ensures lpBuf->dwTail == \old(lpBuf->dwTail);
+
+    behavior emptyBuffer:
+        assumes lpBuf->dwHead == lpBuf->dwTail;
+        assigns \nothing;
+        ensures \result == 0x00;
+    behavior availableData:
+        assumes lpBuf->dwHead != lpBuf->dwTail;
+        assigns \nothing;
+        ensures \result == lpBuf->buffer[\old(lpBuf->dwTail)];
+
+    disjoint behaviors emptyBuffer, availableData;
+    complete behaviors emptyBuffer, availableData;
+*/
 static unsigned char ringBuffer_PeekChar(volatile struct ringBuffer* lpBuf) {
     if(lpBuf->dwHead == lpBuf->dwTail) {
         return 0x00;
@@ -88,6 +243,34 @@ static unsigned char ringBuffer_PeekChar(volatile struct ringBuffer* lpBuf) {
 
     return lpBuf->buffer[lpBuf->dwTail];
 }
+
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires (dwDistance < SERIAL_RINGBUFFER_SIZE);
+
+    assigns \nothing;
+
+    ensures (\result >= 0) && (\result <= 0xFF);
+    ensures acsl_serialbuffer_valid(lpBuf);
+    ensures lpBuf->dwTail == \old(lpBuf->dwTail);
+
+    behavior emptyBuffer:
+        assumes lpBuf->dwHead == lpBuf->dwTail;
+        assigns \nothing;
+        ensures \result == 0x00;
+    behavior distanceInRange:
+        assumes ((lpBuf->dwHead > lpBuf->dwTail) && (dwDistance < (lpBuf->dwTail - lpBuf->dwHead))) || ((lpBuf->dwHead < lpBuf->dwTail) && (dwDistance < (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead));
+        assigns \nothing;
+        ensures \result == lpBuf->buffer[(\old(lpBuf->dwTail) + dwDistance) % SERIAL_RINGBUFFER_SIZE];
+    behavior availableData:
+        assumes ((lpBuf->dwHead > lpBuf->dwTail) && (dwDistance >= (lpBuf->dwTail - lpBuf->dwHead))) || ((lpBuf->dwHead < lpBuf->dwTail) && (dwDistance >= (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead));
+        assigns \nothing;
+        ensures \result == 0x00;
+
+    disjoint behaviors emptyBuffer, availableData;
+    complete behaviors emptyBuffer, availableData;
+*/
 static unsigned char ringBuffer_PeekCharN(
     volatile struct ringBuffer* lpBuf,
     unsigned long int dwDistance
@@ -101,6 +284,17 @@ static unsigned char ringBuffer_PeekCharN(
 
     return lpBuf->buffer[(lpBuf->dwTail + dwDistance) % SERIAL_RINGBUFFER_SIZE];
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires ((lpBuf->dwHead > lpBuf->dwTail) && (dwCount <= (lpBuf->dwTail - lpBuf->dwHead))) || ((lpBuf->dwHead < lpBuf->dwTail) && (dwCount <= (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead));
+    requires (dwCount >= 0);
+
+    assigns lpBuf->dwTail;
+
+    ensures lpBuf->dwTail == ((\old(lpBuf->dwTail) + dwCount) % SERIAL_RINGBUFFER_SIZE);
+    ensures acsl_serialbuffer_valid(lpBuf);
+*/
 static inline void ringBuffer_discardN(
     volatile struct ringBuffer* lpBuf,
     unsigned long int dwCount
@@ -108,6 +302,38 @@ static inline void ringBuffer_discardN(
     lpBuf->dwTail = (lpBuf->dwTail + dwCount) % SERIAL_RINGBUFFER_SIZE;
     return;
 }
+/*
+    required lpBuf != NULL;
+    requires \valid(lpOut);
+    requires \valid(&(lpOut[0..dwLen]));
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires dwLen < SERIAL_RINGBUFFER_SIZE;
+
+    assigns lpOut[0 .. dwLen-1];
+
+    ensures acsl_serialbuffer_valid(lpBuf);
+    ensures (\result >= 0) && (\result <= dwLen);
+
+    behavior notEnoughData:
+        assumes ((dwLen > (lpBuf->dwTail - lpBuf->dwHead)) && (lpBuf->dwHead >= lpBuf->dwTail))
+            || ((dwLen > ((SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead)) && (lpBuf->dwHead < lpBuf->dwTail));
+        assigns \nothing;
+        ensures \result == 0
+        
+    behavior dataAvail:
+        assumes ((dwLen <= (lpBuf->dwTail - lpBuf->dwHead)) && (lpBuf->dwHead >= lpBuf->dwTail))
+            || ((dwLen <= ((SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead)) && (lpBuf->dwHead < lpBuf->dwTail));
+
+        assigns lpOut[0 .. dwLen-1];
+
+        ensures \result == dwLen;
+        ensures \forall int i; 0 <= i < dwLen ==>
+            lpOut[i] == lpBuf->buffer((\old(lpBuf->lpTail) + i) % SERIAL_RINGBUFFER_SIZE);
+        ensures \lpBuf->lpTail == (\old(lpBuf->lpTail) + dwLen) % SERIAL_RINGBUFFER_SIZE;
+
+    disjoint behaviors notEnoughData, dataAvail;
+    complete behaviors notEnoughData, dataAvail;
+*/
 static unsigned long int ringBuffer_ReadChars(
     volatile struct ringBuffer* lpBuf,
     unsigned char* lpOut,
@@ -120,6 +346,11 @@ static unsigned long int ringBuffer_ReadChars(
         return 0;
     }
 
+    /*@
+        loop invariant 0 <= i <= dwLen;
+        loop assigns lpOut[0 .. dwLen-1];
+        loop variant dwLen - i;
+    */
     for(i = 0; i < dwLen; i=i+1) {
         t = lpBuf->buffer[lpBuf->dwTail];
         lpBuf->dwTail = (lpBuf->dwTail + 1) % SERIAL_RINGBUFFER_SIZE;
@@ -128,7 +359,29 @@ static unsigned long int ringBuffer_ReadChars(
 
     return i;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires (bData >= 0) && (bData <= 0xFF);
 
+    assigns lpBuf->buffer[\old(lpBuf->dwHead)];
+    assigns lpBuf->dwHead;
+
+    ensures acsl_serialbuffer_valid(lpBuf);
+
+    behavior bufferAvail:
+        assumes ((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail;
+        assigns lpBuf->buffer[\old(lpBuf->dwHead)];
+        assigns lpBuf->dwHead;
+        ensures lpBuf->buffer[lpBuf->dwHead] == bData;
+        ensures lpBuf->dwHead == (\old(lpBuf->dwHead) + 1) % SERIAL_RINGBUFFER_SIZE;
+    behavior bufferFull:
+        assumes ((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) == lpBuf->dwTail;
+        assigns \nothing;
+
+    disjoint behaviors bufferAvail, bufferFull;
+    complete behaviors bufferAvail, bufferFull;
+*/
 static void ringBuffer_WriteChar(
     volatile struct ringBuffer* lpBuf,
     unsigned char bData
@@ -140,6 +393,17 @@ static void ringBuffer_WriteChar(
     lpBuf->buffer[lpBuf->dwHead] = bData;
     lpBuf->dwHead = (lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE;
 }
+/*@
+    requires lpBuf != NULL;
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires \valid(bData);
+    requires \valid(&(bData[0 .. dwLen]));
+
+    assigns lpBuf->buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+    assigns lpBuf->dwHead;
+
+    ensures acsl_serialbuffer_valid(lpBuf);
+*/
 static void ringBuffer_WriteChars(
     volatile struct ringBuffer* lpBuf,
     unsigned char* bData,
@@ -147,11 +411,25 @@ static void ringBuffer_WriteChars(
 ) {
     unsigned long int i;
 
+    /*@
+        loop invariant 0 <= i < dwLen;
+        loop variant dwLen - i;
+    */
     for(i = 0; i < dwLen; i=i+1) {
         ringBuffer_WriteChar(lpBuf, bData[i]);
     }
 }
+/*@
+    requires lpBuf != NULL;
+    requires \valid(lpBuf);
+    requires acsl_serialbuffer_valid(lpBuf);
+    requires (ui >= 0) && (ui < 4294967297);
 
+    assigns lpBuf->buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+    assigns lpBuf->dwHead;
+
+    ensures acsl_serialbuffer_valid(lpBuf);
+*/
 static void ringBuffer_WriteASCIIUnsignedInt(
     volatile struct ringBuffer* lpBuf,
     uint32_t ui
@@ -170,12 +448,24 @@ static void ringBuffer_WriteASCIIUnsignedInt(
     } else {
         current = ui;
         len = 0;
+        /*@
+            loop invariant current >= 0;
+            loop assigns bTemp[0 .. 9];
+            loop assigns len;
+            loop assigns current;
+            loop variant current;
+        */
         while(current != 0) {
             bTemp[len] = ((uint8_t)(current % 10)) + 0x30;
             len = len + 1;
             current = current / 10;
         }
 
+        /*@
+            loop invariant 0 <= i <= len;
+            loop assigns lpBuf->buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+            loop variant len - i;
+        */
         for(i = 0; i < len; i=i+1) {
             ringBuffer_WriteChar(lpBuf, bTemp[len - 1 - i]);
         }
@@ -195,6 +485,15 @@ volatile struct ringBuffer serialRB0_RX;
 
 static volatile int serialRXFlag; /* RX flag is set to indicate that new data has arrived */
 
+/*@
+    requires \valid(&UCSR0A) && \valid(&UCSR0B) && \valid(&SREG);
+
+    assigns UCSR0A;
+    assigns UCSR0B;
+
+    ensures (UCSR0A & 0x40) == 0x40;
+    ensures (UCSR0B & 0x28) == 0x28;
+*/
 void serialModeTX0() {
     /*
         This starts the transmitter ... other than for the RS485 half duplex
@@ -212,6 +511,23 @@ void serialModeTX0() {
         SREG = sregOld;
     #endif
 }
+/*@
+    requires \valid(&serialRB0_TX) && \valid(&serialRB0_RX);
+    requires \valid(&UBRR0) && \valid(&UCSR0A) && \valid(&UCSR0B) && \valid(&UCSR0C);
+
+    assigns UBRR0;
+    assigns UCSR0A;
+    assigns UCSR0B;
+    assigns UCSR0C;
+
+    ensures acsl_serialbuffer_valid(&serialRB0_TX);
+    ensures acsl_serialbuffer_valid(&serialRB0_RX);
+    ensures serialRXFlag == 0;
+    ensures UBRR0 == 103;
+    ensures (UCSR0A == 0x02)
+        && (UCSR0B == 0x90)
+        && (UCSR0C == 0x06);
+*/
 void serialInit0() {
     uint8_t sregOld = SREG;
     #ifndef FRAMAC_SKIP
@@ -232,10 +548,43 @@ void serialInit0() {
 
     return;
 }
+/*@
+    requires acsl_serialbuffer_valid(&serialRB0_RX);
+    requires \valid(&UDR0);
+
+    assigns serialRXFlag;
+    assigns serialRB0_RX.buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+    assigns serialRB0_RX.dwHead;
+
+    ensures acsl_serialbuffer_valid(&serialRB0_RX);
+*/
 ISR(USART0_RX_vect) {
     ringBuffer_WriteChar(&serialRB0_RX, UDR0);
     serialRXFlag = 1;
 }
+/*@
+    requires acsl_serialbuffer_valid(&serialRB0_TX);
+
+    assigns UDR0;
+    assigns UCSR0B;
+
+    ensures acsl_serialbuffer_valid(&serialRB0_TX);
+
+    behavior dataAvail:
+        assumes serialRB0_TX.dwHead != serialRB0_TX.dwTail;
+
+        assigns UDR0;
+
+        ensures UDR0 == serialRB0_TX.buffer[\old(serialRB0_TX.dwTail)];
+        ensures serialRB0_TX.dwTail == \old(serialRB0_TX.dwTail) + 1;
+    behavior noDataAvail:
+        assumes serialRB0_TX.dwHead == serialRB0_TX.dwTail;
+
+        assigns UCSR0B;
+
+    disjoint behaviors dataAvail, noDataAvail;
+    complete behaviors dataAvail, noDataAvail;
+*/
 ISR(USART0_UDRE_vect) {
     if(ringBuffer_Available(&serialRB0_TX) == true) {
         /* Shift next byte to the outside world ... */
@@ -259,6 +608,16 @@ ISR(USART0_UDRE_vect) {
 
     static volatile int serialRX1Flag; /* RX flag is set to indicate that new data has arrived */
 
+    /*@
+        requires \valid(&UCSR1A) && \valid(&UCSR1B) && \valid(&SREG);
+
+        assigns SREG;
+        assigns UCSR1A;
+        assigns UCSR1B;
+
+        ensures (UCSR1A & 0x40) == 0x40;
+        ensures (UCSR1B & 0x28) == 0x28;
+    */
     void serialModeTX1() {
         uint8_t sregOld = SREG;
         #ifndef FRAMAC_SKIP
@@ -271,6 +630,25 @@ ISR(USART0_UDRE_vect) {
             SREG = sregOld;
         #endif
     }
+    /*@
+        requires \valid(&serialRB1_TX) && \valid(&serialRB1_RX);
+        requires \valid(&UBRR1) && \valid(&UCSR1A) && \valid(&UCSR1B) && \valid(&UCSR1C);
+
+        assigns UBRR1;
+        assigns UCSR1A;
+        assigns UCSR1B;
+        assigns UCSR1C;
+
+        ensures acsl_serialbuffer_valid(&serialRB1_TX);
+        ensures acsl_serialbuffer_valid(&serialRB1_RX);
+
+        ensures serialRX1Flag == 0;
+
+        ensures UBRR1 == 103;
+        ensures (UCSR1A == 0x02)
+            && (UCSR1B == 0x90)
+            && (UCSR1C == 0x06);
+    */
     void serialInit1() {
         uint8_t sregOld = SREG;
         #ifndef FRAMAC_SKIP
@@ -280,7 +658,7 @@ ISR(USART0_UDRE_vect) {
         ringBuffer_Init(&serialRB1_TX);
         ringBuffer_Init(&serialRB1_RX);
 
-        serialRXFlag = 0;
+        serialRX1Flag = 0;
 
         UBRR1   = 103; // 16 : 115200, 103: 19200
         UCSR1A  = 0x02;
@@ -291,10 +669,43 @@ ISR(USART0_UDRE_vect) {
 
         return;
     }
+    /*@
+        requires acsl_serialbuffer_valid(&serialRB1_RX);
+        requires \valid(&UDR1);
+
+        assigns serialRB1_RX.buffer[0 .. SERIAL_RINGBUFFER_SIZE-1];
+        assigns serialRB1_RX.dwHead;
+        assigns serialRX1Flag;
+
+        ensures acsl_serialbuffer_valid(&serialRB1_RX);
+    */
     ISR(USART1_RX_vect) {
         ringBuffer_WriteChar(&serialRB1_RX, UDR1);
         serialRX1Flag = 1;
     }
+    /*@
+        requires acsl_serialbuffer_valid(&serialRB1_TX);
+
+        assigns UDR1;
+        assigns UCSR1B;
+
+        ensures acsl_serialbuffer_valid(&serialRB1_TX);
+
+        behavior dataAvail:
+            assumes serialRB1_TX.dwHead != serialRB1_TX.dwTail;
+
+            assigns UDR1;
+
+            ensures UDR1 == serialRB1_TX.buffer[\old(serialRB1_TX.dwTail)];
+            ensures serialRB1_TX.dwTail == \old(serialRB1_TX.dwTail) + 1;
+        behavior noDataAvail:
+            assumes serialRB1_TX.dwHead == serialRB1_TX.dwTail;
+
+            assigns UCSR1B;
+
+        disjoint behaviors dataAvail, noDataAvail;
+        complete behaviors dataAvail, noDataAvail;
+    */
     ISR(USART1_UDRE_vect) {
         if(ringBuffer_Available(&serialRB1_TX) == true) {
             /* Shift next byte to the outside world ... */
@@ -314,6 +725,16 @@ ISR(USART0_UDRE_vect) {
 
     static volatile int serialRX2Flag; /* RX flag is set to indicate that new data has arrived */
 
+    /*@
+        requires \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&SREG);
+
+        assigns SREG;
+        assigns UCSR2A;
+        assigns UCSR2B;
+
+        ensures (UCSR2A & 0x40) == 0x40;
+        ensures (UCSR2B & 0x28) == 0x28;
+    */
     void serialModeTX2() {
         uint8_t sregOld = SREG;
         #ifndef FRAMAC_SKIP
@@ -326,6 +747,24 @@ ISR(USART0_UDRE_vect) {
             SREG = sregOld;
         #endif
     }
+    /*@
+        requires \valid(&serialRB2_TX);
+        requires \valid(&UBRR2) && \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&UCSR2C);
+
+        assigns UBRR2;
+        assigns UCSR2A;
+        assigns UCSR2B;
+        assigns UCSR2C;
+
+        ensures acsl_serialbuffer_valid(&serialRB2_TX);
+
+        ensures serialRX2Flag == 0;
+
+        ensures UBRR2 == 103;
+        ensures (UCSR2A == 0x02)
+            && (UCSR2B == 0x90)
+            && (UCSR2C == 0x06);
+    */
     void serialInit2() {
         uint8_t sregOld = SREG;
         #ifndef FRAMAC_SKIP
@@ -345,6 +784,20 @@ ISR(USART0_UDRE_vect) {
 
         return;
     }
+    /*@
+        assigns serialRX2Flag;
+
+        behavior ignoreOtherThanQ:
+            assumes (UDR2 != 'q');
+            assigns \nothing;
+        behavior gotQ:
+            assumes UDR2 == 'q';
+            assigns serialRX2Flag;
+            ensures serialRX2Flag == 1;
+
+        disjoint behaviors gotQ, ignoreOtherThanQ;
+        complete behaviors gotQ, ignoreOtherThanQ;
+    */
     ISR(USART2_RX_vect) {
         uint8_t rcvData = UDR2;
 
@@ -357,6 +810,29 @@ ISR(USART0_UDRE_vect) {
             return;
         }
     }
+    /*@
+        requires acsl_serialbuffer_valid(&serialRB2_TX);
+
+        assigns UDR2;
+        assigns UCSR2B;
+
+        ensures acsl_serialbuffer_valid(&serialRB2_TX);
+
+        behavior dataAvail:
+            assumes serialRB2_TX.dwHead != serialRB2_TX.dwTail;
+
+            assigns UDR2;
+
+            ensures UDR2 == serialRB2_TX.buffer[\old(serialRB2_TX.dwTail)];
+            ensures serialRB2_TX.dwTail == \old(serialRB2_TX.dwTail) + 1;
+        behavior noDataAvail:
+            assumes serialRB2_TX.dwHead == serialRB2_TX.dwTail;
+
+            assigns UCSR2B;
+
+        disjoint behaviors dataAvail, noDataAvail;
+        complete behaviors dataAvail, noDataAvail;
+    */
     ISR(USART2_UDRE_vect) {
         if(ringBuffer_Available(&serialRB2_TX) == true) {
             /* Shift next byte to the outside world ... */
@@ -379,6 +855,25 @@ ISR(USART0_UDRE_vect) {
 
 static unsigned char handleSerial0Messages_StringBuffer[SERIAL_RINGBUFFER_SIZE];
 
+/*@
+    predicate acsl_is_whitespace(char c) =
+        (c == 0x0A) || (c == 0x0D) || (c == 0x09) || (c == 0x0C) || (c == 0x0B) || (c == 0x20);
+*/
+/*@
+    requires (c >= 0) && (c < 256);
+
+    assigns \nothing;
+
+    behavior ws:
+        assumes acsl_is_whitespace(c);
+        ensures \result == true;
+    behavior nows:
+        assumes !acsl_is_whitespace(c);
+        ensures \result == false;
+
+    disjoint behaviors ws, nows;
+    complete behaviors ws, nows;
+*/
 static inline bool strIsWhite(char c) {
     switch(c) {
         case 0x0A:  return true;
@@ -390,10 +885,52 @@ static inline bool strIsWhite(char c) {
     }
     return false;
 }
+/*@
+    requires (c >= 0) && (c < 256);
+
+    assigns \nothing;
+
+    behavior capitalLetter:
+        assumes (c >= 0x41) && (c <= 0x5A);
+        ensures \result == (c + 0x20);
+    behavior nocapitalLetter:
+        assumes (c < 0x41) || (c > 0x5A);
+        ensures \result == c;
+
+    disjoint behaviors capitalLetter, nocapitalLetter;
+    complete behaviors capitalLetter, nocapitalLetter;
+*/
 static inline char strCasefoldIfChar(char c) {
     if((c >= 0x41) && (c <= 0x5A)) { c = c + 0x20; }
     return c;
 }
+/*@
+    requires \valid(lpA) && \valid(lpB);
+    requires \valid(&(lpA[0 .. dwLenA-1]));
+    requires \valid(&(lpB[0 .. dwLenB-1]));
+
+    assigns \nothing;
+
+    behavior diffLen:
+        assumes dwLenA != dwLenB;
+        assigns \nothing;
+        ensures \result == false;
+    behavior equalString:
+        assumes dwLenA == dwLenB;
+        assumes \forall int i; 0 <= i < dwLenA ==>
+            lpA[i] == lpB[i];
+        assigns \nothing;
+        ensures \result == true;
+    behavior differentString:
+        assumes dwLenA == dwLenB;
+        assumes \exists int i; 0 <= i <= dwLenA
+            && lpA[i] != lpB[i];
+        assigns \nothing;
+        ensures \result == false;
+
+    disjoint behaviors diffLen, equalString, differentString;
+    complete behaviors diffLen, equalString, differentString;
+*/
 static bool strCompare(
     char* lpA,
     unsigned long int dwLenA,
@@ -403,6 +940,12 @@ static bool strCompare(
     unsigned long int i;
 
     if(dwLenA != dwLenB) { return false; }
+
+    /*@
+        loop invariant 0 <= i < dwLenA;
+        loop assigns \nothing;
+        loop variant dwLenA - i;
+    */
     for(i = 0; i < dwLenA; i=i+1) {
         if(lpA[i] != lpB[i]) {
             return false;
@@ -411,6 +954,33 @@ static bool strCompare(
 
     return true;
 }
+/*@
+    requires \valid(lpA) && \valid(lpB);
+    requires \valid(&(lpA[0 .. dwLenA-1]));
+    requires \valid(&(lpB[0 .. dwLenB-1]));
+
+    assigns \nothing;
+
+    behavior atoolong:
+        assumes dwLenA > dwLenB;
+        assigns \nothing;
+        ensures \result == false;
+    behavior equalString:
+        assumes dwLenA <= dwLenB;
+        assumes \forall int i; 0 <= i < dwLenA ==>
+            lpA[i] == lpB[i];
+        assigns \nothing;
+        ensures \result == true;
+    behavior differentString:
+        assumes dwLenA <= dwLenB;
+        assumes \exists int i; 0 <= i <= dwLenA
+            && lpA[i] != lpB[i];
+        assigns \nothing;
+        ensures \result == false;
+
+    disjoint behaviors atoolong, equalString, differentString;
+    complete behaviors atoolong, equalString, differentString;
+*/
 static bool strComparePrefix(
     char* lpA,
     unsigned long int dwLenA,
@@ -420,6 +990,12 @@ static bool strComparePrefix(
     unsigned long int i;
 
     if(dwLenA > dwLenB) { return false; }
+
+    /*@
+        loop invariant 0 <= i < dwLenA;
+        loop assigns \nothing;
+        loop variant dwLenA - i;
+    */
     for(i = 0; i < dwLenA; i=i+1) {
         if(lpA[i] != lpB[i]) {
             return false;
@@ -428,6 +1004,14 @@ static bool strComparePrefix(
 
     return true;
 }
+/*@
+    requires \valid(lpStr);
+    requires \valid(&(lpStr[0 .. dwLen-1]));
+
+    assigns \nothing;
+
+    ensures (\result >= 0) && (\result < 4294967296);
+*/
 static uint32_t strASCIIToDecimal(
     uint8_t* lpStr,
     unsigned long int dwLen
@@ -436,13 +1020,19 @@ static uint32_t strASCIIToDecimal(
     uint8_t currentChar;
     uint32_t currentValue = 0;
 
+    /*@
+        loop invariant 0 <= i < dwLen;
+        loop assigns currentValue;
+        loop variant dwLen - i;
+    */
     for(i = 0; i < dwLen; i=i+1) {
         currentChar = lpStr[i];
         if((currentChar >= 0x30) && (currentChar <= 0x39)) {
             currentChar = currentChar - 0x30;
             currentValue = currentValue * 10 + currentChar;
         }
-    }    return currentValue;
+    }
+    return currentValue;
 }
 
 static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210819_001\n";
@@ -451,13 +1041,20 @@ static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
 static unsigned char handleSerial0Messages_Response__PSUSTATE_Part[] = "$$$psustate";
 
+/*@
+    requires \valid(&serialRB0_RX);
+    requires \valid(&(serialRB0_RX.buffer[0 .. SERIAL_RINGBUFFER_SIZE]));
+    requires acsl_serialbuffer_valid(&serialRB0_RX);
+    requires dwLength >= 5;
+
+    assigns handleSerial0Messages_StringBuffer[0 .. dwLength-1];
+
+    ensures acsl_serialbuffer_valid(&serialRB0_RX);
+*/
 static void handleSerial0Messages_CompleteMessage(
     unsigned long int dwLength
 ) {
     unsigned long int dwLen;
-#if 0
-    unsigned long int dwDiscardBytes;
-#endif
 
     /*
         We have received a complete message - now we will remove the sync
@@ -465,20 +1062,17 @@ static void handleSerial0Messages_CompleteMessage(
     */
     ringBuffer_discardN(&serialRB0_RX, 3); /* Skip sync pattern */
     dwLen = dwLength - 3;
-#if 0
-    dwDiscardBytes = dwLen; /* Remember how many bytes we have to skip in the end ... */
-#endif
+    //@ assert dwLen > 2;
 
     /* Remove end of line for next parser ... */
     dwLen = dwLen - 1; /* Remove LF */
+    //@ assert dwLen > 0;
     dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB0_RX, dwLen-1) == 0x0D) ? 1 : 0); /* Remove CR if present */
-
+    //@ assert dwLen >= 0;
 
     /* Now copy message into a local buffer to make parsing WAY easier ... */
     ringBuffer_ReadChars(&serialRB0_RX, handleSerial0Messages_StringBuffer, dwLen);
-#if 0
-    ringBuffer_discardN(&serialRB0_RX, dwDiscardBytes-dwLen);
-#endif
+
     /*
         Now process that message at <handleSerial0Messages_StringBuffer, dwLen>
     */
@@ -744,6 +1338,12 @@ static void handleSerial0Messages_CompleteMessage(
             ringBuffer_WriteChars(&serialRB0_TX, "$$$", 3);
 
             len = 0;
+            /*@
+                loop invariant adcValue >= 0;
+                loop assigns bTemp[0 .. 5];
+                loop assigns adcValue;
+                loop variant adcValue;
+            */
             while(adcValue > 0) {
                 uint16_t nextVal = adcValue % 10;
                 adcValue = adcValue / 10;
@@ -753,6 +1353,11 @@ static void handleSerial0Messages_CompleteMessage(
                 len = len + 1;
             }
 
+            /*@
+                loop invariant 0 <= i <= len;
+                loop assigns serialRB0_TX.buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+                loop variant len - i;
+            */
             for(i = 0; i < len; i=i+1) {
                 ringBuffer_WriteChar(&serialRB0_TX, bTemp[len - 1 - i]);
             }
@@ -772,14 +1377,6 @@ void handleSerial0Messages() {
     unsigned long int dwMessageEnd;
 
     /*
-        Check if we received new data. It makes no sense to re-check message formats
-        in case nothing arrived.
-    */
-#if 0
-    if(serialRXFlag == 0) { return; }
-    serialRXFlag = 0;
-#endif
-    /*
         We simply check if a full message has arrived in the ringbuffer. If
         it has we will start to decode the message with the appropriate module
     */
@@ -789,6 +1386,9 @@ void handleSerial0Messages() {
     /*
         First we scan for the synchronization pattern. If the first character
         is not found - skip over any additional bytes ...
+    */
+    /*@
+        loop assigns serialRB0_RX.dwTail;
     */
     while((ringBuffer_PeekChar(&serialRB0_RX) != '$') && (ringBuffer_AvailableN(&serialRB0_RX) > 3)) {
         ringBuffer_discardN(&serialRB0_RX, 1); /* Skip next character */
@@ -800,6 +1400,9 @@ void handleSerial0Messages() {
     /*
         Discard additional bytes in case we don't see the full sync pattern and
         as long as data is available
+    */
+    /*@
+        loop assigns serialRB0_RX.dwTail;
     */
     while(
         (
@@ -826,6 +1429,9 @@ void handleSerial0Messages() {
         another more sync pattern - in the latter case we ignore any message ...
     */
     dwMessageEnd = 3;
+    /*@
+        loop assigns dwMessageEnd;
+    */
     while((dwMessageEnd < dwAvailableLength) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != 0x0A) && (ringBuffer_PeekCharN(&serialRB0_RX, dwMessageEnd) != '$')) {
         dwMessageEnd = dwMessageEnd + 1;
     }
@@ -868,9 +1474,6 @@ void handleSerial0Messages() {
         unsigned long int dwLength
     ) {
         unsigned long int dwLen;
-    #if 0
-        unsigned long int dwDiscardBytes;
-    #endif
 
         /*
             We have received a complete message - now we will remove the sync
@@ -878,9 +1481,6 @@ void handleSerial0Messages() {
         */
         ringBuffer_discardN(&serialRB1_RX, 3); /* Skip sync pattern */
         dwLen = dwLength - 3;
-    #if 0
-        dwDiscardBytes = dwLen; /* Remember how many bytes we have to skip in the end ... */
-    #endif
 
         /* Remove end of line for next parser ... */
         dwLen = dwLen - 1; /* Remove LF */
@@ -889,9 +1489,7 @@ void handleSerial0Messages() {
 
         /* Now copy message into a local buffer to make parsing WAY easier ... */
         ringBuffer_ReadChars(&serialRB1_RX, handleSerial1Messages_StringBuffer, dwLen);
-    #if 0
-        ringBuffer_discardN(&serialRB1_RX, dwDiscardBytes-dwLen);
-    #endif
+
         /*
             Now process that message at <handleSerial1Messages_StringBuffer, dwLen>
         */
@@ -1185,14 +1783,6 @@ void handleSerial0Messages() {
         unsigned long int dwMessageEnd;
 
         /*
-            Check if we received new data. It makes no sense to re-check message formats
-            in case nothing arrived.
-        */
-    #if 0
-        if(serialRXFlag == 0) { return; }
-        serialRXFlag = 0;
-    #endif
-        /*
             We simply check if a full message has arrived in the ringbuffer. If
             it has we will start to decode the message with the appropriate module
         */
@@ -1353,6 +1943,11 @@ void handleSerial0Messages() {
 
 void rampMessage_ReportVoltages() {
     unsigned long int i;
+    /*@
+        loop invariant 0 <= i <= 4;
+        loop assigns serialRB0_TX.buffer[0 .. SERIAL_RINGBUFFER_SIZE];
+        loop variant 4 - i;
+    */
     for(i = 0; i < 4; i=i+1) {
         uint16_t v;
         {
