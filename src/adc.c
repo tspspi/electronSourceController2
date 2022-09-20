@@ -19,10 +19,17 @@ static uint8_t adcCurrentMux;
 
 #ifndef ADC_CHANNELS16
     uint16_t currentADC[8];
+    #define ADC_CHANNEL_COUNT 8
 #else
     uint16_t currentADC[16];
+    #define ADC_CHANNEL_COUNT 16
 #endif
 
+/*@
+    assigns currentADC[0 .. ADC_CHANNEL_COUNT-1];
+    assigns ADMUX;
+    assigns ADCSRB;
+*/
 ISR(ADC_vect) {
     #ifndef ADC_CHANNELS16
         uint8_t oldMUX = ADMUX;
@@ -43,6 +50,18 @@ ISR(ADC_vect) {
     #endif
 }
 
+/*@
+    assigns PRR0;
+    assigns ADMUX;
+    assigns ADCSRB;
+    assigns ADCSRA;
+    assigns SREG;
+
+    ensures (PRR0 & 0x01) == 0;
+    ensures (ADMUX == 0x40);
+    ensures (ADCSRB == 0x00);
+    ensures ADCSRA == 0xFF;
+*/
 void adcInit() {
     unsigned long int i;
 
