@@ -80,8 +80,15 @@ static inline uint16_t serialADC2MilliampsFILA(
     ensures acsl_serialbuffer_valid(lpBuf);
 */
 static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
     lpBuf->dwHead = 0;
     lpBuf->dwTail = 0;
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
 }
 /*@
     requires lpBuf != NULL;
@@ -103,7 +110,16 @@ static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
     complete behaviors isDataAvailable, noDataAvailable;
 */
 static inline bool ringBuffer_Available(volatile struct ringBuffer* lpBuf) {
-    return (lpBuf->dwHead != lpBuf->dwTail) ? true : false;
+    bool res;
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+    res = (lpBuf->dwHead != lpBuf->dwTail) ? true : false;
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
+    return res;
 }
 /*@
     requires lpBuf != NULL;
@@ -125,7 +141,16 @@ static inline bool ringBuffer_Available(volatile struct ringBuffer* lpBuf) {
     complete behaviors noSpaceAvailable, spaceAvailable;
 */
 static inline bool ringBuffer_Writable(volatile struct ringBuffer* lpBuf) {
-    return (((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) ? true : false;
+    bool res;
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+    res = (((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) ? true : false;
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
+    return res;
 }
 /*@
     requires lpBuf != NULL;
@@ -148,11 +173,22 @@ static inline bool ringBuffer_Writable(volatile struct ringBuffer* lpBuf) {
     complete behaviors noWrapping, wrapping;
 */
 static inline unsigned long int ringBuffer_AvailableN(volatile struct ringBuffer* lpBuf) {
+    unsigned long int res;
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
     if(lpBuf->dwHead >= lpBuf->dwTail) {
-        return lpBuf->dwHead - lpBuf->dwTail;
+        res = lpBuf->dwHead - lpBuf->dwTail;
     } else {
-        return (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead;
+        res = (SERIAL_RINGBUFFER_SIZE - lpBuf->dwTail) + lpBuf->dwHead;
     }
+
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
+    return res;
 }
 /*@
     requires lpBuf != NULL;
@@ -205,12 +241,21 @@ static inline unsigned long int ringBuffer_WriteableN(volatile struct ringBuffer
 static unsigned char ringBuffer_ReadChar(volatile struct ringBuffer* lpBuf) {
     char t;
 
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
     if(lpBuf->dwHead == lpBuf->dwTail) {
         return 0x00;
     }
 
     t = lpBuf->buffer[lpBuf->dwTail];
     lpBuf->dwTail = (lpBuf->dwTail + 1) % SERIAL_RINGBUFFER_SIZE;
+
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
 
     return t;
 }
@@ -237,11 +282,21 @@ static unsigned char ringBuffer_ReadChar(volatile struct ringBuffer* lpBuf) {
     complete behaviors emptyBuffer, availableData;
 */
 static unsigned char ringBuffer_PeekChar(volatile struct ringBuffer* lpBuf) {
-    if(lpBuf->dwHead == lpBuf->dwTail) {
-        return 0x00;
+    unsigned char res = 0x00;
+
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
+    if(lpBuf->dwHead != lpBuf->dwTail) {
+        res = lpBuf->buffer[lpBuf->dwTail];
     }
 
-    return lpBuf->buffer[lpBuf->dwTail];
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
+    return res;
 }
 
 /*@
@@ -275,14 +330,24 @@ static unsigned char ringBuffer_PeekCharN(
     volatile struct ringBuffer* lpBuf,
     unsigned long int dwDistance
 ) {
-    if(lpBuf->dwHead == lpBuf->dwTail) {
-        return 0x00;
-    }
-    if(ringBuffer_AvailableN(lpBuf) <= dwDistance) {
-        return 0x00;
+    unsigned char res = 0x00;
+
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
+    if(lpBuf->dwHead != lpBuf->dwTail) {
+        if(ringBuffer_AvailableN(lpBuf) > dwDistance) {
+            res = lpBuf->buffer[(lpBuf->dwTail + dwDistance) % SERIAL_RINGBUFFER_SIZE];
+        }
     }
 
-    return lpBuf->buffer[(lpBuf->dwTail + dwDistance) % SERIAL_RINGBUFFER_SIZE];
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
+
+    return res; 
 }
 /*@
     requires lpBuf != NULL;
@@ -299,7 +364,14 @@ static inline void ringBuffer_discardN(
     volatile struct ringBuffer* lpBuf,
     unsigned long int dwCount
 ) {
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
     lpBuf->dwTail = (lpBuf->dwTail + dwCount) % SERIAL_RINGBUFFER_SIZE;
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
     return;
 }
 /*
@@ -340,22 +412,29 @@ static unsigned long int ringBuffer_ReadChars(
     unsigned long int dwLen
 ) {
     char t;
-    unsigned long int i;
+    unsigned long int i = 0;
 
-    if(dwLen > ringBuffer_AvailableN(lpBuf)) {
-        return 0;
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
+    if(dwLen <= ringBuffer_AvailableN(lpBuf)) {
+        /*@
+            loop invariant 0 <= i <= dwLen;
+            loop assigns lpOut[0 .. dwLen-1];
+            loop variant dwLen - i;
+        */
+        for(i = 0; i < dwLen; i=i+1) {
+            t = lpBuf->buffer[lpBuf->dwTail];
+            lpBuf->dwTail = (lpBuf->dwTail + 1) % SERIAL_RINGBUFFER_SIZE;
+            lpOut[i] = t;
+        }
     }
 
-    /*@
-        loop invariant 0 <= i <= dwLen;
-        loop assigns lpOut[0 .. dwLen-1];
-        loop variant dwLen - i;
-    */
-    for(i = 0; i < dwLen; i=i+1) {
-        t = lpBuf->buffer[lpBuf->dwTail];
-        lpBuf->dwTail = (lpBuf->dwTail + 1) % SERIAL_RINGBUFFER_SIZE;
-        lpOut[i] = t;
-    }
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
 
     return i;
 }
@@ -386,12 +465,19 @@ static void ringBuffer_WriteChar(
     volatile struct ringBuffer* lpBuf,
     unsigned char bData
 ) {
-    if(((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) == lpBuf->dwTail) {
-        return; /* Simply discard data */
+    #ifndef FRAMAC_SKIP
+        cli();
+        uint8_t oldSREG = SREG;
+    #endif
+
+    if(((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) {
+        lpBuf->buffer[lpBuf->dwHead] = bData;
+        lpBuf->dwHead = (lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE;
     }
 
-    lpBuf->buffer[lpBuf->dwHead] = bData;
-    lpBuf->dwHead = (lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE;
+    #ifndef FRAMAC_SKIP
+        SREG = oldSREG;
+    #endif
 }
 /*@
     requires lpBuf != NULL;
@@ -594,6 +680,7 @@ ISR(USART0_UDRE_vect) {
             Since no more data is available for shifting simply stop
             the transmitter and associated interrupts
         */
+        UDR0 = '$';
         UCSR0B = UCSR0B & (~(0x08 | 0x20));
     }
 }
