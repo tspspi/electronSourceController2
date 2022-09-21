@@ -740,5 +740,3 @@ class ElectronGunControl:
         else:
             return None
 
-# MQTT implementation
-
