@@ -47,4 +47,4 @@ cleanall: clean
 	-rm *.hex
 	-rm bin/*.hex
 
-.PHONY: all clean cleanall
+.PHONY: all clean cleanall flash framac
