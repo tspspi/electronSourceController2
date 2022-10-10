@@ -657,6 +657,37 @@ class ElectronGunControl:
         if self.stabilizationDelay and sync:
             time.sleep(self.stabilizationDelay)
 
+    def setPSUCurrentMicroamps(self, channel, current, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+
+        cmd = b'$$$psuseta'
+
+        try:
+            channel = int(channel)
+        except ValueError:
+            raise ElectronGunInvalidParameterException("Channel has to be an integer in range 1 to 4")
+        if (channel < 1) or (channel > 4):
+            raise ElectronGunInvalidParameterException("Channel has to be an integer in range 1 to 4")
+
+        try:
+            current = int(current)
+        except ValueError:
+            raise ElectronGunInvalidParameterException("Current has to be integer value")
+
+        if (current < 0) or (current > 2000):
+            raise ElectronGunInvalidParameterException("Current has to be in range from 0 to 2000 uA")
+
+        cmd = cmd + bytes(str(channel), encoding="ascii") + bytes(str(voltage), encoding="ascii")
+
+        cmd = cmd + b'\n'
+        self.port.write(cmd)
+        self._lastcommand = cmd
+
+        if self.stabilizationDelay and sync:
+            time.sleep(self.stabilizationDelay)
+
+
     def setFilamentCurrent(self, currentMa, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
