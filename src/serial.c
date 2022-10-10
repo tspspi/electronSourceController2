@@ -81,8 +81,8 @@ static inline uint16_t serialADC2MilliampsFILA(
 */
 static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
     lpBuf->dwHead = 0;
     lpBuf->dwTail = 0;
@@ -112,8 +112,8 @@ static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
 static inline bool ringBuffer_Available(volatile struct ringBuffer* lpBuf) {
     bool res;
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
     res = (lpBuf->dwHead != lpBuf->dwTail) ? true : false;
     #ifndef FRAMAC_SKIP
@@ -143,8 +143,8 @@ static inline bool ringBuffer_Available(volatile struct ringBuffer* lpBuf) {
 static inline bool ringBuffer_Writable(volatile struct ringBuffer* lpBuf) {
     bool res;
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
     res = (((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) ? true : false;
     #ifndef FRAMAC_SKIP
@@ -175,8 +175,8 @@ static inline bool ringBuffer_Writable(volatile struct ringBuffer* lpBuf) {
 static inline unsigned long int ringBuffer_AvailableN(volatile struct ringBuffer* lpBuf) {
     unsigned long int res;
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(lpBuf->dwHead >= lpBuf->dwTail) {
@@ -242,8 +242,8 @@ static unsigned char ringBuffer_ReadChar(volatile struct ringBuffer* lpBuf) {
     char t;
 
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(lpBuf->dwHead == lpBuf->dwTail) {
@@ -285,8 +285,8 @@ static unsigned char ringBuffer_PeekChar(volatile struct ringBuffer* lpBuf) {
     unsigned char res = 0x00;
 
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(lpBuf->dwHead != lpBuf->dwTail) {
@@ -333,8 +333,8 @@ static unsigned char ringBuffer_PeekCharN(
     unsigned char res = 0x00;
 
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(lpBuf->dwHead != lpBuf->dwTail) {
@@ -365,8 +365,8 @@ static inline void ringBuffer_discardN(
     unsigned long int dwCount
 ) {
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
     lpBuf->dwTail = (lpBuf->dwTail + dwCount) % SERIAL_RINGBUFFER_SIZE;
     #ifndef FRAMAC_SKIP
@@ -415,8 +415,8 @@ static unsigned long int ringBuffer_ReadChars(
     unsigned long int i = 0;
 
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(dwLen <= ringBuffer_AvailableN(lpBuf)) {
@@ -466,8 +466,8 @@ static void ringBuffer_WriteChar(
     unsigned char bData
 ) {
     #ifndef FRAMAC_SKIP
-        cli();
         uint8_t oldSREG = SREG;
+        cli();
     #endif
 
     if(((lpBuf->dwHead + 1) % SERIAL_RINGBUFFER_SIZE) != lpBuf->dwTail) {
@@ -593,9 +593,8 @@ void serialModeTX0() {
 
     UCSR0A = UCSR0A | 0x40; /* Reset TXCn bit */
     UCSR0B = UCSR0B | 0x08 | 0x20;
-    #ifndef FRAMAC_SKIP
-        SREG = sregOld;
-    #endif
+
+    SREG = sregOld;
 }
 /*@
     requires \valid(&serialRB0_TX) && \valid(&serialRB0_RX);
