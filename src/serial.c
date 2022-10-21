@@ -1564,7 +1564,7 @@ void handleSerial0Messages() {
 #ifdef SERIAL_UART1_ENABLE
     static unsigned char handleSerial1Messages_StringBuffer[SERIAL_RINGBUFFER_SIZE];
 
-    static unsigned char handleSerial1Messages_Response__ID[] = "$$$electronctrl_20210819_001\n";
+    static unsigned char handleSerial1Messages_Response__ID[] = "$$$electronctrl_20221021_001\n";
     static unsigned char handleSerial1Messages_Response__ERR[] = "$$$err\n";
     static unsigned char handleSerial1Messages_Response__VN_Part[] = "$$$v";
     static unsigned char handleSerial1Messages_Response__AN_Part[] = "$$$a";
