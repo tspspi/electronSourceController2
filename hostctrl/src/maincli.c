@@ -479,8 +479,8 @@ int main(int argc, char* argv[]) {
                     return 1;
                 }
                 i = i + 1;
-                printf("Setting filament current to %lu\n", dwTemp);
-                lpEgun->vtbl->setFilamentCurrent(lpEgun, dwTemp);
+                printf("Setting filament current to %lu mA\n", dwTemp);
+                lpEgun->vtbl->setFilamentCurrent(lpEgun, dwTemp * 10);
             } else if(strcmp(argv[i], "filon") == 0) {
                 printf("Filament on\n");
                 lpEgun->vtbl->setFilamentOn(lpEgun, true);
