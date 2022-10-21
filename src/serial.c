@@ -2186,7 +2186,7 @@ static unsigned char rampMessage_ReportFilaCurrents__Message1[] = "$$$filseta:";
 static unsigned char rampMessage_ReportFilaCurrents__MessageDisabled[] = "disabled\n";
 // static unsigned char rampMessage_ReportFilaCurrents__Message2[] = "$$$fila:";
 void rampMessage_ReportFilaCurrents() {
-    if (bFilament__EnableCurrent != false) {
+    // if (bFilament__EnableCurrent != false) {
         uint16_t a = (uint16_t)dwFilament__SetCurrent;
 
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
@@ -2208,7 +2208,7 @@ void rampMessage_ReportFilaCurrents() {
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         #endif
-    } else {
+    /* } else {
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__MessageDisabled, sizeof(rampMessage_ReportFilaCurrents__MessageDisabled)-1);
 
@@ -2216,7 +2216,7 @@ void rampMessage_ReportFilaCurrents() {
             ringBuffer_WriteChars(&serialRB1_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
             ringBuffer_WriteChars(&serialRB1_TX, rampMessage_ReportFilaCurrents__MessageDisabled, sizeof(rampMessage_ReportFilaCurrents__MessageDisabled)-1);
         #endif
-    }
+    } */
     serialModeTX0();
     #ifdef SERIAL_UART1_ENABLE
         serialModeTX1();
