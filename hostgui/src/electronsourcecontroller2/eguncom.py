@@ -407,6 +407,30 @@ class ElectronGunControl:
                     self.internal__signalCondition("filseta", newSetValue)
                 except ValueError:
                     pass
+        elif msg[0:len("seta:")] == "seta:":
+            parts = msg.split(":")
+            if parts[1] == "disabled":
+                if self.cbFilamentCurrentSet:
+                    if type(self.cbFilamentCurrentSet) is list:
+                        for f in self.cbFilamentCurrentSet:
+                            if callable(f):
+                                f(self, None)
+                    elif callable(self.cbFilamentCurrentSet):
+                        self.cbFilamentCurrentSet(self, None)
+                self.internal__signalCondition("seta:", True )
+            else:
+                try:
+                    newSetValue = int(parts[1])
+                    if self.cbFilamentCurrentSet:
+                        if type(self.cbFilamentCurrentSet) is list:
+                            for f in self.cbFilamentCurrentSet:
+                                if callable(f):
+                                    f(self, newSetValue)
+                        elif callable(self.cbFilamentCurrentSet):
+                            self.cbFilamentCurrentSet(self, newSetValue)
+                    self.internal__signalCondition("seta:", newSetValue)
+                except ValueError:
+                    pass
         elif msg[0:len("off")] == "off":
             if self.cbOff:
                 if type(self.cbOff) is list:
@@ -707,8 +731,10 @@ class ElectronGunControl:
         self.port.write(cmd)
         self._lastcommand = cmd
 
-        if self.stabilizationDelay and sync:
-            time.sleep(self.stabilizationDelay)
+        if sync:
+            return self.internal__waitForMessageFilter("seta")
+        else:
+            return None
 
     def setFilamentOn(self, *ignore, sync = False):
         if self.port == False:
