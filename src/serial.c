@@ -2299,7 +2299,7 @@ void filamentCurrent_SetCurrent(unsigned long int newCurrent) {
     dwFilament__SetCurrent = newCurrent;
     if(bFilament__EnableCurrent != false) {
         ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_SetCurrent_Part, sizeof(filamentCurrent__Msg_SetCurrent_Part)-1);
-        ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, newCurrent*10);
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, newCurrent);
         ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
         serialModeTX2();
     } else {
