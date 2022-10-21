@@ -1388,7 +1388,8 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("fila", 4, handleSerial0Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_GetCurrent();
     } else if(strComparePrefix("setfila", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        filamentCurrent_SetCurrent(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
+        uint32_t newFilamentCurrent = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7);
+        filamentCurrent_SetCurrent(newFilamentCurrent);
         rampMode.mode = controllerRampMode__None;
     } else if(strCompare("insul", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_InsulationTest();
@@ -1820,8 +1821,8 @@ void handleSerial0Messages() {
         } else if(strComparePrefix("fila", 4, handleSerial1Messages_StringBuffer, dwLen) == true) {
             filamentCurrent_GetCurrent();
         } else if(strComparePrefix("setfila", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
-            /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
-            filamentCurrent_SetCurrent(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7));
+            uint32_t newFilamentCurrent = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7);
+            filamentCurrent_SetCurrent(newFilamentCurrent);
             rampMode.mode = controllerRampMode__None;
         } else if(strCompare("insul", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
             rampStart_InsulationTest();

@@ -74,6 +74,8 @@ void rampStart_InsulationTest() {
 
 void rampStart_BeamOn() {
     unsigned long int i;
+    unsigned long int targetCurrent = filamentCurrent_GetCachedCurrent();
+
     /*@
         loop invariant 1 <= i <= 5;
         loop assigns psuStates[i-1].bOutputEnable;
@@ -91,7 +93,7 @@ void rampStart_BeamOn() {
     rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
     rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
     rampMode.vTargets[3] = 0;
-    rampMode.aTargetFilament = filamentCurrent_GetCachedCurrent(); /* We use the currently selected filament current as target */
+    rampMode.aTargetFilament = targetCurrent; /* We use the currently selected filament current as target */
 
     rampMode.vCurrent[0] = 0;
     rampMode.vCurrent[1] = 0;
