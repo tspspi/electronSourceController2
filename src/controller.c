@@ -160,6 +160,9 @@ static void handleRamp() {
             }
 
             rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
+            if(rampMode.filamentCurrent > rampMode.aTargetFilament) {
+                rampMode.filamentCurrent = rampMode.aTargetFilament;
+            }
             filamentCurrent_SetCurrent(rampMode.filamentCurrent);
             rampMode.clkLastTick = curTime;
             return;
