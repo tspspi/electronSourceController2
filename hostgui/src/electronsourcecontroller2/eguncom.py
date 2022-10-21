@@ -720,14 +720,14 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
 
-        if (currentMa < 0) or (currentMa > 100):
-            raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA")
+        if (currentMa < 0) or (currentMa > 10000):
+            raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
         try:
             currentMa = int(currentMa)
         except ValueError:
-            raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA")
+            raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
 
-        cmd = b'$$$setfila' + bytes(str(currentMa * 10.0), encoding="ascii") + b'\n'
+        cmd = b'$$$setfila' + bytes(str(currentMa), encoding="ascii") + b'\n'
         self.port.write(cmd)
         self._lastcommand = cmd
 
