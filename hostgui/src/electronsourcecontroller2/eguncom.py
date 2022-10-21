@@ -417,7 +417,7 @@ class ElectronGunControl:
                                 f(self, None)
                     elif callable(self.cbFilamentCurrentSet):
                         self.cbFilamentCurrentSet(self, None)
-                self.internal__signalCondition("seta:", True )
+                self.internal__signalCondition("filseta", True )
             else:
                 try:
                     newSetValue = int(parts[1])
@@ -428,7 +428,7 @@ class ElectronGunControl:
                                     f(self, newSetValue)
                         elif callable(self.cbFilamentCurrentSet):
                             self.cbFilamentCurrentSet(self, newSetValue)
-                    self.internal__signalCondition("seta:", newSetValue)
+                    self.internal__signalCondition("filseta", newSetValue)
                 except ValueError:
                     pass
         elif msg[0:len("off")] == "off":
@@ -732,7 +732,7 @@ class ElectronGunControl:
         self._lastcommand = cmd
 
         if sync:
-            return self.internal__waitForMessageFilter("seta")
+            return self.internal__waitForMessageFilter("filseta")
         else:
             return None
 
