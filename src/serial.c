@@ -12,6 +12,9 @@
 #include "./psu.h"
 #include "./pwmout.h"
 
+static volatile unsigned long int dwFilament__SetCurrent;
+static volatile bool bFilament__EnableCurrent;
+
 /*
     ADC counts to current or voltage:
 
@@ -82,7 +85,7 @@ static inline uint16_t serialADC2MilliampsFILA(
 static inline void ringBuffer_Init(volatile struct ringBuffer* lpBuf) {
     #ifndef FRAMAC_SKIP
         uint8_t oldSREG = SREG;
-        cli();
+            cli();
     #endif
     lpBuf->dwHead = 0;
     lpBuf->dwTail = 0;
@@ -806,96 +809,91 @@ ISR(USART0_UDRE_vect) {
     }
 #endif
 
-#ifdef SERIAL_UART2_ENABLE
-    volatile struct ringBuffer serialRB2_TX;
+volatile struct ringBuffer serialRB2_TX;
+volatile struct ringBuffer serialRB2_RX;
 
-    static volatile int serialRX2Flag; /* RX flag is set to indicate that new data has arrived */
+static volatile int serialRX2Flag; /* RX flag is set to indicate that new data has arrived */
 
-    /*@
-        requires \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&SREG);
+/*@
+    requires \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&SREG);
 
-        assigns SREG;
-        assigns UCSR2A;
-        assigns UCSR2B;
+    assigns SREG;
+    assigns UCSR2A;
+    assigns UCSR2B;
 
-        ensures (UCSR2A & 0x40) == 0x40;
-        ensures (UCSR2B & 0x28) == 0x28;
-    */
-    void serialModeTX2() {
-        uint8_t sregOld = SREG;
-        #ifndef FRAMAC_SKIP
-            cli();
-        #endif
+    ensures (UCSR2A & 0x40) == 0x40;
+    ensures (UCSR2B & 0x28) == 0x28;
+*/
+void serialModeTX2() {
+    uint8_t sregOld = SREG;
+    #ifndef FRAMAC_SKIP
+        cli();
+    #endif
 
-        UCSR2A = UCSR2A | 0x40; /* Reset TXCn bit */
-        UCSR2B = UCSR2B | 0x08 | 0x20;
-        #ifndef FRAMAC_SKIP
-            SREG = sregOld;
-        #endif
-    }
-    /*@
-        requires \valid(&serialRB2_TX);
-        requires \valid(&UBRR2) && \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&UCSR2C);
+    UCSR2A = UCSR2A | 0x40; /* Reset TXCn bit */
+    UCSR2B = UCSR2B | 0x08 | 0x20;
 
-        assigns UBRR2;
-        assigns UCSR2A;
-        assigns UCSR2B;
-        assigns UCSR2C;
+    SREG = sregOld;
+}
+/*@
+    requires \valid(&serialRB2_TX);
+    requires \valid(&UBRR2) && \valid(&UCSR2A) && \valid(&UCSR2B) && \valid(&UCSR2C);
 
-        ensures acsl_serialbuffer_valid(&serialRB2_TX);
+    assigns UBRR2;
+    assigns UCSR2A;
+    assigns UCSR2B;
+    assigns UCSR2C;
 
-        ensures serialRX2Flag == 0;
+    ensures acsl_serialbuffer_valid(&serialRB2_TX);
 
-        ensures UBRR2 == 103;
-        ensures (UCSR2A == 0x02)
-            && (UCSR2B == 0x90)
-            && (UCSR2C == 0x06);
-    */
-    void serialInit2() {
-        uint8_t sregOld = SREG;
-        #ifndef FRAMAC_SKIP
-            cli();
-        #endif
+    ensures serialRX2Flag == 0;
 
-        ringBuffer_Init(&serialRB2_TX);
+    ensures UBRR2 == 103;
+    ensures (UCSR2A == 0x02)
+        && (UCSR2B == 0x90)
+        && (UCSR2C == 0x06);
+ */
+void serialInit2() {
+    dwFilament__SetCurrent = 0;
+    bFilament__EnableCurrent = false;
 
-        serialRXFlag = 0;
+    uint8_t sregOld = SREG;
+    #ifndef FRAMAC_SKIP
+        cli();
+    #endif
 
-        UBRR2   = 103; // 16 : 115200, 103: 19200
-        UCSR2A  = 0x02;
-        UCSR2B  = 0x10 | 0x80; /* Enable receiver and RX interrupt */
-        UCSR2C  = 0x06;
+    ringBuffer_Init(&serialRB2_TX);
+    ringBuffer_Init(&serialRB2_RX);
 
-        SREG = sregOld;
+    serialRX2Flag = 0;
 
-        return;
-    }
-    /*@
+    UBRR2   = 832; // 16 : 115200, 103: 19200, 832 : 2400
+    UCSR2A  = 0x02;
+    UCSR2B  = 0x10 | 0x80; /* Enable receiver and RX interrupt */
+    UCSR2C  = 0x06;
+
+    SREG = sregOld;
+
+    return;
+}
+/*@
+    assigns serialRX2Flag;
+
+    behavior ignoreOtherThanQ:
+        assumes (UDR2 != 'q');
+        assigns \nothing;
+    behavior gotQ:
+        assumes UDR2 == 'q';
         assigns serialRX2Flag;
+        ensures serialRX2Flag == 1;
 
-        behavior ignoreOtherThanQ:
-            assumes (UDR2 != 'q');
-            assigns \nothing;
-        behavior gotQ:
-            assumes UDR2 == 'q';
-            assigns serialRX2Flag;
-            ensures serialRX2Flag == 1;
-
-        disjoint behaviors gotQ, ignoreOtherThanQ;
-        complete behaviors gotQ, ignoreOtherThanQ;
-    */
-    ISR(USART2_RX_vect) {
-        uint8_t rcvData = UDR2;
-
-        if((rcvData == 0x0A) || (rcvData == 0x0D)) {
-            return;
-        } else {
-            if(rcvData == 'q') {
-                serialRX2Flag = 1;
-            }
-            return;
-        }
-    }
+    disjoint behaviors gotQ, ignoreOtherThanQ;
+    complete behaviors gotQ, ignoreOtherThanQ;
+*/
+ISR(USART2_RX_vect) {
+    ringBuffer_WriteChar(&serialRB2_RX, UDR2);
+    serialRX2Flag = 1;
+}
     /*@
         requires acsl_serialbuffer_valid(&serialRB2_TX);
 
@@ -919,19 +917,24 @@ ISR(USART0_UDRE_vect) {
         disjoint behaviors dataAvail, noDataAvail;
         complete behaviors dataAvail, noDataAvail;
     */
-    ISR(USART2_UDRE_vect) {
-        if(ringBuffer_Available(&serialRB2_TX) == true) {
-            /* Shift next byte to the outside world ... */
-            UDR2 = ringBuffer_ReadChar(&serialRB2_TX);
-        } else {
-            /*
-                Since no more data is available for shifting simply stop
-                the transmitter and associated interrupts
-            */
+ISR(USART2_UDRE_vect) {
+    if(ringBuffer_Available(&serialRB2_TX) == true) {
+        /* Shift next byte to the outside world ... */
+        UDR2 = ringBuffer_ReadChar(&serialRB2_TX);
+
+        /* In case we've written the last byte we stop transmissions after this byte */
+        if(ringBuffer_Available(&serialRB2_TX) != true) {
             UCSR2B = UCSR2B & (~(0x08 | 0x20));
         }
+    } else {
+        /*
+            Since no more data is available for shifting simply stop
+            the transmitter and associated interrupts
+        */
+        UDR2 = '$';
+        UCSR2B = UCSR2B & (~(0x08 | 0x20));
     }
-#endif
+}
 
 /*
     =================================================
@@ -1121,7 +1124,7 @@ static uint32_t strASCIIToDecimal(
     return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20210819_001\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221021_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -1170,6 +1173,8 @@ static void handleSerial0Messages_CompleteMessage(
         /* Send ID response ... */
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__ID, sizeof(handleSerial0Messages_Response__ID)-1);
         serialModeTX0();
+        filamentCurrent_GetId();
+        filamentCurrent_GetVersion();
     } else if(strCompare("psugetv1", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint16_t v;
         {
@@ -1328,13 +1333,13 @@ static void handleSerial0Messages_CompleteMessage(
         psuStates[1].bOutputEnable = false;
         psuStates[2].bOutputEnable = false;
         psuStates[3].bOutputEnable = false;
-        setFilamentOn(false);
+        filamentCurrent_Enable(false);
         rampMode.mode = controllerRampMode__None;
         statusMessageOff();
     } else if(strCompare("filon", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        setFilamentOn(true);
+        filamentCurrent_Enable(true);
     } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        setFilamentOn(false);
+        filamentCurrent_Enable(false);
         rampMode.mode = controllerRampMode__None;
     } else if(strCompare("psumode", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
         unsigned long int iPSU;
@@ -1373,23 +1378,9 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("psuseta4", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
         setPSUMicroamps(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8), 4);
     } else if(strComparePrefix("fila", 4, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint16_t a;
-        {
-            cli();
-            a = currentADC[8];
-            sei();
-        }
-        a = serialADC2MilliampsFILA(a);
-        // a = serialAD7705CountToMilliamps(a);
-        ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
-        ringBuffer_WriteChar(&serialRB0_TX, 'f');
-        ringBuffer_WriteChar(&serialRB0_TX, ':');
-        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
-        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
-        serialModeTX0();
+        filamentCurrent_GetCurrent();
     } else if(strComparePrefix("setfila", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
-        setFilamentPWM(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
+        filamentCurrent_SetCurrent(strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[7]), dwLen-7));
         rampMode.mode = controllerRampMode__None;
     } else if(strCompare("insul", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         rampStart_InsulationTest();
@@ -1407,8 +1398,31 @@ static void handleSerial0Messages_CompleteMessage(
         rampStart_BeamOn();
     } else if(strCompare("noprotection", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         protectionEnabled = 0;
+        filamentCurrent_EnableProtection(false);
     } else if(strCompare("reset", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         asm volatile ("jmp 0 \n");
+    /* Passthrough commands to current controller */
+    } else if(strComparePrefix("seta:", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint32_t newAmps = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[5]), dwLen-5);
+        if(newAmps > 0) {
+            filamentCurrent_Enable(true);
+        } else {
+            filamentCurrent_Enable(false);
+        }
+        filamentCurrent_SetCurrent(newAmps);
+    } else if(strCompare("getseta", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetSetCurrent();
+    } else if(strCompare("geta", 4, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetCurrent();
+    } else if(strCompare("getadc0", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetRawADC();
+    } else if(strCompare("adccal0", 7, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_CalLow();
+    } else if(strComparePrefix("adccalh:", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint32_t highMilliamps = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[8]), dwLen-8);
+        filamentCurrent_CalHigh(highMilliamps);
+    } else if(strCompare("adccalstore", 11, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_CalStore();
 #ifdef DEBUG
     } else if(strCompare("rawadc", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
         /* Deliver raw adc value of frist channel for testing purpose ... */
@@ -1587,6 +1601,8 @@ void handleSerial0Messages() {
             /* Send ID response ... */
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__ID, sizeof(handleSerial1Messages_Response__ID)-1);
             serialModeTX1();
+            filamentCurrent_GetId();
+            filamentCurrent_GetVersion();
         } else if(strCompare("psugetv1", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             uint16_t v;
             {
@@ -1749,13 +1765,13 @@ void handleSerial0Messages() {
             setPSUVolts(0, 2);
             setPSUVolts(0, 3);
             setPSUVolts(0, 4);
-            setFilamentOn(false);
+            filamentCurrent_Enable(false);
             rampMode.mode = controllerRampMode__None;
             statusMessageOff();
         } else if(strCompare("filon", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
-            setFilamentOn(true);
+            filamentCurrent_Enable(true);
         } else if(strCompare("filoff", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
-            setFilamentOn(false);
+            filamentCurrent_Enable(false);
             rampMode.mode = controllerRampMode__None;
         } else if(strCompare("psumode", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
             unsigned long int iPSU;
@@ -1794,23 +1810,10 @@ void handleSerial0Messages() {
         } else if(strComparePrefix("psuseta4", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
             setPSUMicroamps(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8), 4);
         } else if(strComparePrefix("fila", 4, handleSerial1Messages_StringBuffer, dwLen) == true) {
-            uint16_t a;
-            {
-                cli();
-                a = currentADC[8];
-                sei();
-            }
-            a = serialADC2MilliampsFILA(a);
-            // a = serialAD7705CountToMilliamps(a);
-            ringBuffer_WriteChars(&serialRB1_TX, handleSerial1Messages_Response__AN_Part, sizeof(handleSerial1Messages_Response__AN_Part)-1);
-            ringBuffer_WriteChar(&serialRB1_TX, 'f');
-            ringBuffer_WriteChar(&serialRB1_TX, ':');
-            ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
-            ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
-            serialModeTX1();
+            filamentCurrent_GetCurrent();
         } else if(strComparePrefix("setfila", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Currently setting PWM cycles instead of mA, will require calibration with working filament ... */
-            setFilamentPWM(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7));
+            filamentCurrent_SetCurrent(strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[7]), dwLen-7));
             rampMode.mode = controllerRampMode__None;
         } else if(strCompare("insul", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
             rampStart_InsulationTest();
@@ -1824,8 +1827,31 @@ void handleSerial0Messages() {
             rampStart_BeamOn();
         } else if(strCompare("noprotection", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
             protectionEnabled = 0;
+            filamentCurrent_EnableProtection(false);
         } else if(strCompare("reset", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
             asm volatile ("jmp 0 \n");
+    /* Passthrough commands to current controller */
+    } else if(strComparePrefix("seta:", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newAmps = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[5]), dwLen-5);
+        if(newAmps > 0) {
+            filamentCurrent_Enable(true);
+        } else {
+            filamentCurrent_Enable(false);
+        }
+        filamentCurrent_SetCurrent(newAmps);
+    } else if(strCompare("getseta", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetSetCurrent();
+    } else if(strCompare("geta", 4, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetCurrent();
+    } else if(strCompare("getadc0", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_GetRawADC();
+    } else if(strCompare("adccal0", 7, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_CalLow();
+    } else if(strComparePrefix("adccalh:", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t highMilliamps = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[8]), dwLen-8);
+        filamentCurrent_CalHigh(highMilliamps);
+    } else if(strCompare("adccalstore", 11, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        filamentCurrent_CalStore();
     #ifdef DEBUG
         } else if(strCompare("rawadc", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Deliver raw adc value of frist channel for testing purpose ... */
@@ -1943,81 +1969,166 @@ void handleSerial0Messages() {
     =================================================
     = Command handler for serial protocol on USART2 =
     =================================================
-
-    Protocol on UART2 is pretty simple. Any character sent will trigger
-    a status message delivery. All data will be dropped. For each
-    incoming character there will be one status message (except for
-    linebreaks)
 */
 
-#ifdef SERIAL_UART2_ENABLE
-    void handleSerial2Messages() {
-        /*
-            Only run if data is available ...
-        */
-        {
-            uint8_t sregOld = SREG;
-            #ifdef FRAMAC_SKIP
-                cli();
-            #endif
-            if(serialRX2Flag == 0) {
-                #ifdef FRAMAC_SKIP
-                    SREG = sregOld;
-                #endif
-                return;
-            }
-            serialRX2Flag = 0;
-            SREG = sregOld;
-        }
+static unsigned char handleSerial2Messages_StringBuffer[SERIAL_RINGBUFFER_SIZE];
 
-        /*
-            This is a pretty simple protocol - discard every received character
-            exactly once and dump a status message ...
-        */
+static void handleSerial2Messages_CompleteMessage(
+    unsigned long int dwLength
+) {
+    unsigned long int dwLen;
+    bool bPassthrough = false;
 
-        /*
-            FIrst the four voltages and four currents
-        */
-        for(unsigned long int i = 0; i < 4; i=i+1) {
-            uint16_t v, a;
+    /*
+        We have received a complete message - now we will remove the sync
+        pattern, calculate actual length
+    */
+    ringBuffer_discardN(&serialRB2_RX, 3); /* Skip sync pattern */
+    dwLen = dwLength - 3;
+    //@ assert dwLen > 2;
 
-            cli();
-            v = currentADC[i*2];
-            a = currentADC[i*2+1];
-            sei();
+    /* Remove end of line for next parser ... */
+    dwLen = dwLen - 1; /* Remove LF */
+    //@ assert dwLen > 0;
+    dwLen = dwLen - ((ringBuffer_PeekCharN(&serialRB2_RX, dwLen-1) == 0x0D) ? 1 : 0); /* Remove CR if present */
+    //@ assert dwLen >= 0;
 
-            v = serialADC2VoltsHCP(v);
-            a = serialADC2TenthMicroampsHCP(a);
+    /* Now copy message into a local buffer to make parsing WAY easier ... */
+    ringBuffer_ReadChars(&serialRB2_RX, handleSerial2Messages_StringBuffer, dwLen);
 
-            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, v);
-            ringBuffer_WriteChar(&serialRB2_TX, ':');
-            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-            ringBuffer_WriteChar(&serialRB2_TX, ':');
-        }
+    /*
+        Now process that message at <handleSerial2Messages_StringBuffer, dwLen>
+    */
 
-        /*
-            Then filament setting and filament current
-        */
-        {
-            uint16_t a = getFilamentPWM();
-            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-            ringBuffer_WriteChar(&serialRB2_TX, ':');
-            {
-                cli();
-                a = currentADC[8];
-                // a = ad7705CurrentCounts;
-                sei();
-            }
-            a = serialADC2MilliampsFILA(a);
-            // a = serialAD7705CountToMilliamps(a);
-            ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, a);
-        }
+    /*
+        Parse different replies from current controller board
+    */
 
-        ringBuffer_WriteChar(&serialRB2_TX, 0x0D);
-        ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
-        serialModeTX2();
+    if(strComparePrefix("id:", 3, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller ID response. Pass through to other ports */
+        bPassthrough = true;
+    } else if(strComparePrefix("ver:", 4, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller version response */
+        bPassthrough = true;
+    } else if(strComparePrefix("seta:", 5, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller query for set current response */
+        bPassthrough = true;
+    } else if(strComparePrefix("adc0:", 5, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller raw ADC query response */
+        bPassthrough = true;
+    } else if(strComparePrefix("ra:", 3, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller measured current response */
+        bPassthrough = true;
+    } else if(strCompare("ok", 2, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller ok response */
+        bPassthrough = true;
+    } else if(strCompare("err", 3, handleSerial2Messages_StringBuffer, dwLen)) {
+        /* Filament controller error response */
+        bPassthrough = true;
+    } else {
+        /* Unknown ... */
     }
-#endif
+
+    if(bPassthrough != false) {
+        ringBuffer_WriteChar(&serialRB0_TX, '$');
+        ringBuffer_WriteChar(&serialRB0_TX, '$');
+        ringBuffer_WriteChar(&serialRB0_TX, '$');
+        ringBuffer_WriteChars(&serialRB0_TX, handleSerial2Messages_StringBuffer, dwLen);
+        ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
+
+        ringBuffer_WriteChar(&serialRB1_TX, '$');
+        ringBuffer_WriteChar(&serialRB1_TX, '$');
+        ringBuffer_WriteChar(&serialRB1_TX, '$');
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial2Messages_StringBuffer, dwLen);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+
+        serialModeTX0();
+        serialModeTX1();
+    }
+}
+
+void handleSerial2Messages() {
+    unsigned long int dwAvailableLength;
+    unsigned long int dwMessageEnd;
+
+    /*
+        We simply check if a full message has arrived in the ringbuffer. If
+        it has we will start to decode the message with the appropriate module
+    */
+    dwAvailableLength = ringBuffer_AvailableN(&serialRB2_RX);
+    if(dwAvailableLength < 3) { return; } /* We cannot even see a full synchronization pattern ... */
+
+    /*
+        First we scan for the synchronization pattern. If the first character
+        is not found - skip over any additional bytes ...
+    */
+    /*@
+        loop assigns serialRB0_RX.dwTail;
+    */
+    while((ringBuffer_PeekChar(&serialRB2_RX) != '$') && (ringBuffer_AvailableN(&serialRB0_RX) > 3)) {
+        ringBuffer_discardN(&serialRB2_RX, 1); /* Skip next character */
+    }
+
+    /* If we are too short to fit the entire synchronization packet - wait for additional data to arrive */
+    if(ringBuffer_AvailableN(&serialRB2_RX) < 5) { return; }
+
+    /*
+        Discard additional bytes in case we don't see the full sync pattern and
+        as long as data is available
+    */
+    /*@
+        loop assigns serialRB0_RX.dwTail;
+    */
+    while(
+        (
+            (ringBuffer_PeekCharN(&serialRB2_RX, 0) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB2_RX, 1) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB2_RX, 2) != '$') ||
+            (ringBuffer_PeekCharN(&serialRB2_RX, 3) == '$')
+        )
+        && (ringBuffer_AvailableN(&serialRB2_RX) > 4)
+    ) {
+        ringBuffer_discardN(&serialRB2_RX, 1);
+    }
+
+    /*
+        If there is not enough data for a potential packet to be finished
+        leave (we still have the sync pattern at the start so we can simply
+        retry when additional data has arrived)
+    */
+    if(ringBuffer_AvailableN(&serialRB2_RX) < 5) { return; }
+    dwAvailableLength = ringBuffer_AvailableN(&serialRB2_RX);
+
+    /*
+        Now check if we have already received a complete message OR are seeing
+        another more sync pattern - in the latter case we ignore any message ...
+    */
+    dwMessageEnd = 3;
+    /*@
+        loop assigns dwMessageEnd;
+    */
+    while((dwMessageEnd < dwAvailableLength) && (ringBuffer_PeekCharN(&serialRB2_RX, dwMessageEnd) != 0x0A) && (ringBuffer_PeekCharN(&serialRB2_RX, dwMessageEnd) != '$')) {
+        dwMessageEnd = dwMessageEnd + 1;
+    }
+    if(dwMessageEnd >= dwAvailableLength) {
+        return;
+    }
+
+    if(ringBuffer_PeekCharN(&serialRB2_RX, dwMessageEnd) == 0x0A) {
+        /* Received full message ... */
+        handleSerial2Messages_CompleteMessage(dwMessageEnd+1);
+    }
+    if(ringBuffer_PeekCharN(&serialRB2_RX, dwMessageEnd) == '$') {
+        /* Discard the whole packet but keep the next sync pattern */
+        ringBuffer_discardN(&serialRB2_RX, dwMessageEnd);
+    }
+
+    /*
+        In any other case ignore and continue without dropping the message ...
+        we will wait till we received the whole message
+    */
+    return;
+}
 
 
 
@@ -2067,8 +2178,8 @@ static unsigned char rampMessage_ReportFilaCurrents__Message1[] = "$$$filseta:";
 static unsigned char rampMessage_ReportFilaCurrents__MessageDisabled[] = "disabled\n";
 // static unsigned char rampMessage_ReportFilaCurrents__Message2[] = "$$$fila:";
 void rampMessage_ReportFilaCurrents() {
-    if(isFilamentOn() != false) {
-        uint16_t a = getFilamentPWM();
+    if (bFilament__EnableCurrent != false) {
+        uint16_t a = (uint16_t)dwFilament__SetCurrent;
 
         ringBuffer_WriteChars(&serialRB0_TX, rampMessage_ReportFilaCurrents__Message1, sizeof(rampMessage_ReportFilaCurrents__Message1)-1);
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
@@ -2079,12 +2190,8 @@ void rampMessage_ReportFilaCurrents() {
             ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, a);
             ringBuffer_WriteChar(&serialRB1_TX, ':');
         #endif
-        {
-            cli();
-            a = currentADC[8];
-            sei();
-        }
-        a = serialADC2MilliampsFILA(a);
+
+        a = (uint16_t)dwFilament__SetCurrent;
 
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, a);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
@@ -2159,4 +2266,85 @@ void statusMessageOff() {
         ringBuffer_WriteChars(&serialRB1_TX, statusMessageOff_Msg, sizeof(statusMessageOff_Msg)-1);
         serialModeTX1();
     #endif
+}
+
+/* Methods to communicate with filament current board */
+
+static unsigned char filamentCurrent__Msg_ID[] = "$$$id\n";
+static unsigned char filamentCurrent__Msg_Version[] = "$$$ver\n";
+static unsigned char filamentCurrent__Msg_SetCurrent_Part[] = "$$$seta:";
+static unsigned char filamentCurrent__Msg_GetSetCurrent[] = "$$$getseta\n";
+static unsigned char filamentCurrent__Msg_GetCurrent[] = "$$$geta\n";
+static unsigned char filamentCurrent__Msg_GetCurrentADCRaw[] = "$$$getadc0\n";
+static unsigned char filamentCurrent__Msg_AdcCal0[] = "$$$adccal0\n";
+static unsigned char filamentCurrent__Msg_AdcCalH_Part[] = "$$$adccalh:";
+static unsigned char filamentCurrent__Msg_AdcCalStore[] = "$$$adccalstore\n";
+static unsigned char filamentCurrent__Msg_DisableProt[] = "$$$disableprotection\n";
+static unsigned char filamentCurrent__Msg_EnableProt[] = "$$$enableprotection\n";
+
+
+void filamentCurrent_Enable(bool bEnabled) {
+    bFilament__EnableCurrent = bEnabled;
+    filamentCurrent_SetCurrent(dwFilament__SetCurrent);
+}
+void filamentCurrent_GetId() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_ID, sizeof(filamentCurrent__Msg_ID)-1);
+    serialModeTX2();
+}
+void filamentCurrent_GetVersion() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_Version, sizeof(filamentCurrent__Msg_Version)-1);
+    serialModeTX2();
+}
+void filamentCurrent_SetCurrent(unsigned long int newCurrent) {
+    dwFilament__SetCurrent = newCurrent;
+    if(bFilament__EnableCurrent != false) {
+        ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_SetCurrent_Part, sizeof(filamentCurrent__Msg_SetCurrent_Part)-1);
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, newCurrent*10);
+        ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
+        serialModeTX2();
+    } else {
+        ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_SetCurrent_Part, sizeof(filamentCurrent__Msg_SetCurrent_Part)-1);
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, 0);
+        ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
+        serialModeTX2();
+    }
+
+    rampMessage_ReportFilaCurrents();
+}
+unsigned long int filamentCurrent_GetCachedCurrent() {
+    return dwFilament__SetCurrent;
+}
+void filamentCurrent_GetSetCurrent() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_GetSetCurrent, sizeof(filamentCurrent__Msg_GetSetCurrent)-1);
+    serialModeTX2();
+}
+void filamentCurrent_GetCurrent() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_GetCurrent, sizeof(filamentCurrent__Msg_GetCurrent)-1);
+    serialModeTX2();
+}
+void filamentCurrent_GetRawADC() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_GetCurrentADCRaw, sizeof(filamentCurrent__Msg_GetCurrentADCRaw)-1);
+    serialModeTX2();
+}
+void filamentCurrent_CalLow() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_AdcCal0, sizeof(filamentCurrent__Msg_AdcCal0)-1);
+    serialModeTX2();
+}
+void filamentCurrent_CalHigh(unsigned long int measuredCurrent) {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_AdcCalH_Part, sizeof(filamentCurrent__Msg_AdcCalH_Part)-1);
+    ringBuffer_WriteASCIIUnsignedInt(&serialRB2_TX, measuredCurrent);
+    ringBuffer_WriteChar(&serialRB2_TX, 0x0A);
+    serialModeTX2();
+}
+void filamentCurrent_CalStore() {
+    ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_AdcCalStore, sizeof(filamentCurrent__Msg_AdcCalStore)-1);
+    serialModeTX2();
+}
+void filamentCurrent_EnableProtection(bool bEnabled) {
+    if(bEnabled != false) {
+        ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_EnableProt, sizeof(filamentCurrent__Msg_EnableProt)-1);
+    } else {
+        ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_DisableProt, sizeof(filamentCurrent__Msg_DisableProt)-1);
+    }
+    serialModeTX2();
 }

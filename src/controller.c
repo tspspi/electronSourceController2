@@ -54,8 +54,8 @@ void rampStart_InsulationTest() {
         setPSUVolts(0, i);
         setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
     }
-    setFilamentOn(false);
-    setFilamentPWM(0);
+    filamentCurrent_Enable(false);
+    filamentCurrent_SetCurrent(0);
 
     rampMode.mode = controllerRampMode__InsulationTest;
     rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
@@ -84,14 +84,14 @@ void rampStart_BeamOn() {
         setPSUVolts(0, i);
         setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
     }
-    setFilamentOn(false);
+    filamentCurrent_Enable(false);
 
     rampMode.mode = controllerRampMode__BeamOn;
     rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
     rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
     rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
     rampMode.vTargets[3] = 0;
-    rampMode.aTargetFilament = getFilamentPWM(); /* We use the currently selected filament current as target */
+    rampMode.aTargetFilament = filamentCurrent_GetCachedCurrent(); /* We use the currently selected filament current as target */
 
     rampMode.vCurrent[0] = 0;
     rampMode.vCurrent[1] = 0;
@@ -100,7 +100,7 @@ void rampStart_BeamOn() {
     rampMode.filamentCurrent = 0;
     rampMode.clkLastTick = micros();
 
-    setFilamentPWM(0);
+    filamentCurrent_SetCurrent(0);
 }
 
 /*@
@@ -124,7 +124,7 @@ static void rampInsulationError() {
     psuStates[1].bOutputEnable = false;
     psuStates[2].bOutputEnable = false;
     psuStates[3].bOutputEnable = false;
-    setFilamentOn(false);
+    filamentCurrent_Enable(false);
 
     /*
         Stop ramp
@@ -153,14 +153,14 @@ static void handleRamp() {
             if(timeElapsed < CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS) { return; }
 
             if(rampMode.filamentCurrent == 0) {
-                setFilamentOn(true);
+                filamentCurrent_Enable(true);
                 for(i = 0; i < 4; i=i+1) {
                     setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM, i+1);
                 }
             }
 
             rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
-            setFilamentPWM(rampMode.filamentCurrent);
+            filamentCurrent_SetCurrent(rampMode.filamentCurrent);
             rampMode.clkLastTick = curTime;
             return;
         }

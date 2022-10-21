@@ -25,27 +25,6 @@ void setPSUMicroamps(
     uint16_t ua,
     uint8_t psu
 );
-void setFilamentPWM(
-    uint16_t pwmCycles
-);
-/*@
-    assigns \nothing;
-
-    ensures \result >= 0 && \result < 65536;
-*/
-uint16_t getFilamentPWM();
-/*@
-    requires bOn == true || bOn == false;
-*/
-void setFilamentOn(
-    bool bOn
-);
-/*@
-    assigns \nothing;
-
-    ensures (\result == true) || (\result == false);
-*/
-bool isFilamentOn();
 
 #ifdef __cplusplus
     } /* extern "C" { */

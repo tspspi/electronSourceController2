@@ -37,5 +37,18 @@ void rampMessage_BeamOnSuccess();
 
 void statusMessageOff();
 
+void filamentCurrent_Enable(bool bEnabled);
+void filamentCurrent_GetId();
+void filamentCurrent_GetVersion();
+void filamentCurrent_SetCurrent(unsigned long int newCurrent);
+void filamentCurrent_GetSetCurrent();
+void filamentCurrent_GetCurrent();
+void filamentCurrent_GetRawADC();
+void filamentCurrent_CalLow();
+void filamentCurrent_CalHigh(unsigned long int measuredCurrent);
+void filamentCurrent_CalStore();
+void filamentCurrent_EnableProtection(bool bEnabled);
+unsigned long int filamentCurrent_GetCachedCurrent();
+
 
 #endif /* __is_included__fd8eb7f9_df0f_11eb_ba7e_b499badf00a1 */
