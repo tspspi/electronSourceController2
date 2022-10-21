@@ -677,6 +677,10 @@ ISR(USART0_UDRE_vect) {
     if(ringBuffer_Available(&serialRB0_TX) == true) {
         /* Shift next byte to the outside world ... */
         UDR0 = ringBuffer_ReadChar(&serialRB0_TX);
+        if(ringBuffer_Available(&serialRB0_TX) != true) {
+            /* Stop transmission after this character */
+            UCSR0B = UCSR0B & (~(0x08 | 0x20));
+        }
     } else {
         /*
             Since no more data is available for shifting simply stop
@@ -799,6 +803,10 @@ ISR(USART0_UDRE_vect) {
         if(ringBuffer_Available(&serialRB1_TX) == true) {
             /* Shift next byte to the outside world ... */
             UDR1 = ringBuffer_ReadChar(&serialRB1_TX);
+            if(ringBuffer_Available(&serialRB1_TX) != true) {
+                /* Stop transmission after this character */
+                UCSR1B = UCSR1B & (~(0x08 | 0x20));
+            }
         } else {
             /*
                 Since no more data is available for shifting simply stop
