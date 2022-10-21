@@ -229,7 +229,11 @@ class ElectronGunControl:
             remainingRetries = 0
 
         while self.messageResponse == None:
-            if not self.messageConditionVariable.wait(timeout = 10):
+            if self.messageFilter == "beamon":
+                mytimeout = 120
+            else:
+                mytimeout = 10
+            if not self.messageConditionVariable.wait(timeout = mytimeout):
                 print(f"Timeout while waiting for {self.messageFilter} (Retries remaining: {remainingRetries})")
                 if (remainingRetries > 0) and (self._lastcommand is not None):
                     # Retry command ...
