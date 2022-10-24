@@ -291,6 +291,12 @@ class ElectronGunControl:
                     self.cbIdentify(self, versionDate, versionRev)
 
             self.internal__signalCondition("id", { 'version' : versionDate, 'revision' : versionRev })
+        elif msg[0:len("id:")] == "id:":
+            # ToDo (Current controller)
+            pass
+        elif msg[0:len("ver:")] == "ver:":
+            # ToDo (Current controller)
+            pass
         elif msg[0:len("beamon")] == "beamon":
             if self.cbBeamon:
                 if type(self.cbBeamon) is list:
@@ -441,6 +447,13 @@ class ElectronGunControl:
                     self.cbBeamon(self)
 
             self.internal__signalCondition("off", True)
+        elif msg[0:len("ra:")] == "ra:":
+            # ToDo
+            pass
+        elif msg[0:len("adc0:")] == "adc0:":
+            # ToDo
+            pass
+        
         else:
             print("Unknown message {}".format(msg))
 
