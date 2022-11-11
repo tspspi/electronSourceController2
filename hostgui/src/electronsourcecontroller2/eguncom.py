@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-print("Electron source controller: 0.0.24 (Sat, 2022-10-22)")
+print("Electron source controller: 0.0.26 (Sat, 2022-11-11)")
 
 from collections import deque
 
@@ -426,7 +426,7 @@ class ElectronGunControl:
                 self.internal__signalCondition("filseta", True )
             else:
                 try:
-                    newSetValue = int(parts[1])
+                    newSetValue = int(parts[1]) / 10.0
                     if self.cbFilamentCurrentSet:
                         if type(self.cbFilamentCurrentSet) is list:
                             for f in self.cbFilamentCurrentSet:
@@ -628,46 +628,6 @@ class ElectronGunControl:
         if sync:
             time.sleep(20)
 
-    def setPSUEnable(self, channel, *ignore, sync = False):
-        if self.port == False:
-            raise ElectronGunNotConnected("Electron gun currently not connected")
-        cmd = False
-        if channel == 1:
-            cmd = b'$$$psuon1\n'
-        elif channel == 2:
-            cmd = b'$$$psuon2\n'
-        elif channel == 3:
-            cmd = b'$$$psuon3\n'
-        elif channel == 4:
-            cmd = b'$$$psuon4\n'
-        else:
-            raise ElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
-        self.port.write(cmd)
-        self._lastcommand = cmd
-
-        if self.stabilizationDelay and sync:
-            time.sleep(self.stabilizationDelay)
-
-    def setPSUDisable(self, channel, *ignore, sync = False):
-        if self.port == False:
-            raise ElectronGunNotConnected("Electron gun currently not connected")
-        cmd = False
-        if channel == 1:
-            cmd = b'$$$psuoff1\n'
-        elif channel == 2:
-            cmd = b'$$$psuoff2\n'
-        elif channel == 3:
-            cmd = b'$$$psuoff3\n'
-        elif channel == 4:
-            cmd = b'$$$psuoff4\n'
-        else:
-            raiseElectronGunInvalidParameterException("Power supply channel has to be in range 1 to 4")
-        self.port.write(cmd)
-        self._lastcommand = cmd
-
-        if self.stabilizationDelay and sync:
-            time.sleep(self.stabilizationDelay)
-
     def setPSUVoltage(self, channel, voltage, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -733,7 +693,7 @@ class ElectronGunControl:
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
 
-        if (currentMa < 0) or (currentMa > 10000):
+        if (currentMa < 0) or (currentMa > 100):
             raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
         try:
             currentMa = int(currentMa)
