@@ -6,8 +6,11 @@
 #define PWM_VPERUA 0.979959039479
 #define PWM_FILA_VPERDIV 0.224609375
 
+#define VMAXSLOPE_V_PER_S 12
+
 #include "./sysclock.h"
 #include "./pwmout.h"
+#include "./psu.h"
 #include "./serial.h"
 
 #ifdef __cplusplus
@@ -33,16 +36,44 @@
 #define PWM_TIMERTICK_PRESCALER             0x06
 #define PWM_TIMERTICK_OVERFLOWVAL           0x02
 
-uint16_t pwmoutOnCycles[9];
-static uint16_t pwmoutCurrentCycles[9];
+static uint16_t pwmoutOnCyclesReal[8];
+uint16_t pwmoutOnCycles[8];
+static uint16_t pwmoutCurrentCycles[8];
 static bool bFilamentOn;
+
+static uint16_t slopeUpdateInterval = 0;
 
 ISR(TIMER2_COMPA_vect) {
     uint8_t i;
 
+    /*
+        Implement a slope limit (limiting maximum dV/dt) on voltage
+    */
+    if(slopeUpdateInterval == 2048) {
+        for(i = 0; i < sizeof(pwmoutCurrentCycles)/sizeof(uint16_t)-1; i=i+1) {
+            if((i & 0x01) == 0) {
+                if(pwmoutOnCyclesReal[i] > pwmoutOnCycles[i]) {
+                    pwmoutOnCyclesReal[i] =  ((pwmoutOnCyclesReal[i] - pwmoutOnCycles[i]) > VMAXSLOPE_V_PER_S) ? (pwmoutOnCyclesReal[i] - VMAXSLOPE_V_PER_S) : pwmoutOnCycles[i];
+                } else if(pwmoutOnCyclesReal[i] < pwmoutOnCycles[i]) {
+                    pwmoutOnCyclesReal[i] =  ((pwmoutOnCycles[i] - pwmoutOnCyclesReal[i]) > VMAXSLOPE_V_PER_S) ? (pwmoutOnCyclesReal[i] + VMAXSLOPE_V_PER_S) : pwmoutOnCycles[i];
+                }
+
+                /* Set enable and disable for output according to set output voltage */
+                if(pwmoutOnCyclesReal[i >> 1] != 0) {
+                    psuStates[i >> 1].bOutputEnable = true;
+                } else {
+                    psuStates[i >> 1].bOutputEnable = false;
+                }
+            } else {
+                pwmoutOnCyclesReal[i] = pwmoutOnCycles[i];
+            }
+        }
+    }
+    slopeUpdateInterval = slopeUpdateInterval + 1;
+
     for(i = 0; i < sizeof(pwmoutCurrentCycles)/sizeof(uint16_t)-1; i=i+1) {
         pwmoutCurrentCycles[i] = (pwmoutCurrentCycles[i] + 1) & 0x3FF;
-        if(pwmoutCurrentCycles[i] >= pwmoutOnCycles[i]) {
+        if(pwmoutCurrentCycles[i] >= pwmoutOnCyclesReal[i]) {
             if(i == 0) { PORTL = PORTL & ~(0x80); }
             else if(i == 1) { PORTL = PORTL & ~(0x40); }
 
@@ -67,13 +98,6 @@ ISR(TIMER2_COMPA_vect) {
             else if(i == 6) { PORTL = PORTL | (0x02); }
             else if(i == 7) { PORTL = PORTL | (0x01); }
         }
-    }
-
-    pwmoutCurrentCycles[8] = (pwmoutCurrentCycles[8] + 1) & 0x7F;
-    if((pwmoutCurrentCycles[8] >= pwmoutOnCycles[8]) || (bFilamentOn == false)) {
-        PORTD = PORTD & ~(0x80);
-    } else {
-        PORTD = PORTD | 0x80;
     }
 }
 

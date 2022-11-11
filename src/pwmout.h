@@ -13,7 +13,7 @@
     extern "C" {
 #endif
 
-extern uint16_t pwmoutOnCycles[9];
+extern uint16_t pwmoutOnCycles[8];
 
 void pwmoutInit();
 

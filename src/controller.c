@@ -50,7 +50,6 @@ void rampStart_InsulationTest() {
         loop variant 5-i;
     */
     for(i = 1; i < 5; i=i+1) {
-        psuStates[i-1].bOutputEnable = false;
         setPSUVolts(0, i);
         setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
     }
@@ -82,7 +81,6 @@ void rampStart_BeamOn() {
         loop variant 5-i;
     */
     for(i = 1; i < 5; i=i+1) {
-        psuStates[i-1].bOutputEnable = false;
         setPSUVolts(0, i);
         setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
     }
@@ -122,10 +120,6 @@ static void rampInsulationError() {
     /*
         Disable everything
     */
-    psuStates[0].bOutputEnable = false;
-    psuStates[1].bOutputEnable = false;
-    psuStates[2].bOutputEnable = false;
-    psuStates[3].bOutputEnable = false;
     filamentCurrent_Enable(false);
 
     /*
@@ -185,7 +179,6 @@ static void handleRamp() {
             for(i = 0; i < 4; i=i+1) {
                 rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
                 setPSUVolts(rampMode.vCurrent[i], i+1);
-                psuStates[i].bOutputEnable = (rampMode.vTargets[i] != 0) ? true : false;
                 rampMessage_ReportVoltages();
             }
             rampMode.clkLastTick = curTime;
@@ -215,7 +208,6 @@ static void handleRamp() {
             rampMode.mode = controllerRampMode__None;
             for(i = 0; i < 4; i=i+1) {
                 setPSUVolts(0, i+1);
-                psuStates[i].bOutputEnable = false;
             }
             rampMessage_InsulationTestSuccess();
             return;
