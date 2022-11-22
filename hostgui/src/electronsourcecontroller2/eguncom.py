@@ -4,14 +4,16 @@ import time
 import atexit
 import json
 
-print("Electron source controller: 0.0.26 (Sat, 2022-11-11)")
+print("Electron source controller: 0.0.35 (Sat, 2022-11-22)")
 
 from collections import deque
 
 class ElectronGunRingbuffer:
     def __init__(self, bufferSize = 512):
         self.bufferSize = bufferSize
-        self.buffer = [ None ] * bufferSize
+        self.buffer = [ ]
+        for i in range(512):
+            self.buffer.append(None)
         self.head = 0
         self.tail = 0
         self.lock = threading.Lock()
@@ -22,11 +24,11 @@ class ElectronGunRingbuffer:
         if self.head == self.tail:
             if blocking:
                 self.lock.release()
-            return True
+            return False
         else:
             if blocking:
                 self.lock.release()
-            return False
+            return True
 
     def available(self, *ignore, blocking = True):
         if blocking:
@@ -68,7 +70,7 @@ class ElectronGunRingbuffer:
     def remainingCapacity(self, *ignore, blocking = True):
         if blocking:
             self.lock.acquire()
-        res = self.bufferSize - self.available(blocking = False)
+        res = self.bufferSize - self.available(blocking = False) - 1
         if blocking:
             self.lock.release()
         return res
@@ -89,7 +91,7 @@ class ElectronGunRingbuffer:
                 for c in data:
                     self.push(c, blocking = False)
         else:
-            if self.remainingCapacity(blocking = False) == 0:
+            if self.remainingCapacity(blocking = False) < 1:
                 # Raise error ... ToDo
                 if blocking:
                     self.lock.release()
@@ -117,9 +119,9 @@ class ElectronGunRingbuffer:
             if blocking:
                 self.lock.release()
             return None
-        ret = [ None ] * len
+        ret = [ ]
         for i in range(len):
-            ret[i] = self.buffer[(self.tail + i) % self.bufferSize]
+            ret.append(self.buffer[(self.tail + i) % self.bufferSize])
         self.tail = (self.tail + len) % self.bufferSize
         if blocking:
             self.lock.release()
@@ -139,7 +141,8 @@ class ElectronGunControl:
     POLARITY_POS = b'p'
     POLARITY_NEG = b'n'
 
-    def __init__(self, portFile = None, commandRetries = 3):
+    def __init__(self, portFile = None, commandRetries = 3, shutdownOnTerminate = True):
+        self._shutdownOnTerminate = shutdownOnTerminate
         if not portFile:
             portFile = '/dev/ttyU0'
             try:
@@ -190,6 +193,9 @@ class ElectronGunControl:
         # it works and usually one does not reinitialize too often
         #time.sleep(10)
 
+    def shutdown_on_terminate(self, shutdown):
+        self._shutdownOnTerminate = shutdown
+
     def __enter__(self):
         return self
 
@@ -206,7 +212,8 @@ class ElectronGunControl:
         atexit.unregister(self.close)
         if self.port:
             try:
-                self.off(sync = True)
+                if self._shutdownOnTerminate:
+                    self.off(sync = True)
             except Exception:
                 # Simply ignore all exceptions
                 pass
@@ -230,7 +237,7 @@ class ElectronGunControl:
 
         while self.messageResponse == None:
             if self.messageFilter == "beamon":
-                mytimeout = 120
+                mytimeout = 1200
             else:
                 mytimeout = 10
             if not self.messageConditionVariable.wait(timeout = mytimeout):
@@ -276,79 +283,181 @@ class ElectronGunControl:
         # (and verify the characters are in fact legal)
         msg=''.join([x.decode('utf-8') for x in msgb])
         msg = msg[3:]
-        if msg[0:len("electronctrl")] == "electronctrl":
-            # Response to ID packet
-            parts = msg.split("_")
-            versionDate = parts[1]
-            versionRev = parts[2]
+        try:
+            if msg[0:len("electronctrl")] == "electronctrl":
+                # Response to ID packet
+                parts = msg.split("_")
+                versionDate = parts[1]
+                versionRev = parts[2]
 
-            if self.cbIdentify:
-                if type(self.cbIdentify) is list:
-                    for f in self.cbIdentify:
-                        if callable(f):
-                            f(self, versionDate, versionRev)
-                elif callable(self.cbIdentify):
-                    self.cbIdentify(self, versionDate, versionRev)
-
-            self.internal__signalCondition("id", { 'version' : versionDate, 'revision' : versionRev })
-        elif msg[0:len("id:")] == "id:":
-            # ToDo (Current controller)
-            pass
-        elif msg[0:len("ver:")] == "ver:":
-            # ToDo (Current controller)
-            pass
-        elif msg[0:len("beamon")] == "beamon":
-            if self.cbBeamon:
-                if type(self.cbBeamon) is list:
-                    for f in self.cbBeamon:
-                        if callable(f):
-                            f(self)
-                elif callable(self.cbBeamon):
-                    self.cbBeamon(self)
-
-            self.internal__signalCondition("beamon", True)
-        elif msg[0:len("insulok")] == "insulok":
-            if self.cbInsulation:
-                if type(self.cbInsulation) is list:
-                    for f in self.cbInsulation:
-                        if callable(f):
-                            f(self, True, None)
-                elif callable(self.cbInsulation):
-                    self.cbInsulation(self, True, None)
-
-            self.internal__signalCondition("insulok", True )
-        elif msg[0:len("insulfailed")] == "insulfailed":
-            failedPSUs = []
-            for i in range(4):
-                if msg[len("insulfailed:") + i] == 'F':
-                    failedPSUs.append(i+1)
-            if self.cbInsulation:
-                if type(self.cbInsulation) is list:
-                    for f in self.cbInsulation:
-                        if callable(f):
-                            f(self, False, failedPSUs)
-                elif callable(self.cbInsulation):
-                    self.cbInsulation(self, False, failedPSUs)
-
-            self.internal__signalCondition("insulok", failedPSUs)
-        elif (msg[0] == 'v') and (msg[2] == ':'):
-            try:
-                channel = int(msg[1])
-                voltage = int(msg[3:])
-                if self.cbVoltage:
-                    if type(self.cbVoltage) is list:
-                        for f in self.cbVoltage:
+                if self.cbIdentify:
+                    if type(self.cbIdentify) is list:
+                        for f in self.cbIdentify:
                             if callable(f):
-                                f(self, channel, voltage)
-                    elif callable(self.cbVoltage):
-                        self.cbVoltage(self, channel, voltage)
-                self.internal__signalCondition("v{}".format(channel), voltage )
-            except ValueError:
+                                f(self, versionDate, versionRev)
+                    elif callable(self.cbIdentify):
+                        self.cbIdentify(self, versionDate, versionRev)
+
+                self.internal__signalCondition("id", { 'version' : versionDate, 'revision' : versionRev })
+            elif msg[0:len("id:")] == "id:":
+                # ToDo (Current controller)
                 pass
-        elif (msg[0] == 'a') and (msg[2] == ':'):
-            try:
-                if msg[1] == 'f':
-                    current = int(msg[3:])
+            elif msg[0:len("ver:")] == "ver:":
+                # ToDo (Current controller)
+                pass
+            elif msg[0:len("beamon")] == "beamon":
+                if self.cbBeamon:
+                    if type(self.cbBeamon) is list:
+                        for f in self.cbBeamon:
+                            if callable(f):
+                                f(self)
+                    elif callable(self.cbBeamon):
+                        self.cbBeamon(self)
+
+                self.internal__signalCondition("beamon", True)
+            elif msg[0:len("insulok")] == "insulok":
+                if self.cbInsulation:
+                    if type(self.cbInsulation) is list:
+                        for f in self.cbInsulation:
+                            if callable(f):
+                                f(self, True, None)
+                    elif callable(self.cbInsulation):
+                        self.cbInsulation(self, True, None)
+
+                self.internal__signalCondition("insulok", True )
+            elif msg[0:len("insulfailed")] == "insulfailed":
+                failedPSUs = []
+                for i in range(4):
+                    if msg[len("insulfailed:") + i] == 'F':
+                        failedPSUs.append(i+1)
+                if self.cbInsulation:
+                    if type(self.cbInsulation) is list:
+                        for f in self.cbInsulation:
+                            if callable(f):
+                                f(self, False, failedPSUs)
+                    elif callable(self.cbInsulation):
+                        self.cbInsulation(self, False, failedPSUs)
+
+                self.internal__signalCondition("insulok", failedPSUs)
+            elif (msg[0] == 'v') and (msg[2] == ':'):
+                try:
+                    channel = int(msg[1])
+                    voltage = int(msg[3:])
+                    if self.cbVoltage:
+                        if type(self.cbVoltage) is list:
+                            for f in self.cbVoltage:
+                                if callable(f):
+                                    f(self, channel, voltage)
+                        elif callable(self.cbVoltage):
+                            self.cbVoltage(self, channel, voltage)
+                    self.internal__signalCondition("v{}".format(channel), voltage )
+                except ValueError:
+                    pass
+            elif (msg[0] == 'a') and (msg[2] == ':'):
+                try:
+                    if msg[1] == 'f':
+                        current = int(msg[3:])
+                        if self.cbFilamentCurrent:
+                            if type(self.cbFilamentCurrent) is list:
+                                for f in self.cbFilamentCurrent:
+                                    if callable(f):
+                                        f(self, current)
+                            elif callable(self.cbFilamentCurrent):
+                                self.cbFilamentCurrent(self, current)
+                        self.internal__signalCondition("af", current )
+                    else:
+                        channel = int(msg[1])
+                        current = int(msg[3:])
+                        current = float(current) / 10
+                        if self.cbCurrent:
+                            if type(self.cbCurrent) is list:
+                                for f in self.cbCurrent:
+                                    if callable(f):
+                                        f(self, channel, current)
+                            elif callable(self.cbCurrent):
+                                self.cbCurrent(self, channel, current)
+
+                        self.internal__signalCondition("a{}".format(channel), current )
+                except ValueError:
+                    pass
+            elif msg[0:len("psustate")] == "psustate":
+                states = []
+                for i in range(4):
+                    if msg[len("psustate") + i] == '-':
+                        states.append("off")
+                    elif msg[len("psustate") + i] == 'C':
+                        states.append("current")
+                    else:
+                        states.append("voltage")
+                if self.cbPSUMode:
+                    if type(self.cbPSUMode) is list:
+                        for f in self.cbPSUMode:
+                            if callable(f):
+                                f(self, states)
+                    elif callable(self.cbPSUMode):
+                        self.cbPSUMode(self, states)
+                self.internal__signalCondition("psustate", states )
+            elif msg[0:len("filseta:")] == "filseta:":
+                parts = msg.split(":")
+                if parts[1] == "disabled":
+                    if self.cbFilamentCurrentSet:
+                        if type(self.cbFilamentCurrentSet) is list:
+                            for f in self.cbFilamentCurrentSet:
+                                if callable(f):
+                                    f(self, None)
+                        elif callable(self.cbFilamentCurrentSet):
+                            self.cbFilamentCurrentSet(self, None)
+                    self.internal__signalCondition("filseta", True )
+                else:
+                    try:
+                        newSetValue = int(parts[1])
+                        if self.cbFilamentCurrentSet:
+                            if type(self.cbFilamentCurrentSet) is list:
+                                for f in self.cbFilamentCurrentSet:
+                                    if callable(f):
+                                        f(self, newSetValue)
+                            elif callable(self.cbFilamentCurrentSet):
+                                self.cbFilamentCurrentSet(self, newSetValue)
+                        self.internal__signalCondition("filseta", newSetValue)
+                    except ValueError:
+                        pass
+            elif msg[0:len("seta:")] == "seta:":
+                parts = msg.split(":")
+                if parts[1] == "disabled":
+                    if self.cbFilamentCurrentSet:
+                        if type(self.cbFilamentCurrentSet) is list:
+                            for f in self.cbFilamentCurrentSet:
+                                if callable(f):
+                                    f(self, None)
+                        elif callable(self.cbFilamentCurrentSet):
+                            self.cbFilamentCurrentSet(self, None)
+                    self.internal__signalCondition("filseta", True )
+                else:
+                    try:
+                        newSetValue = int(parts[1]) / 10.0
+                        if self.cbFilamentCurrentSet:
+                            if type(self.cbFilamentCurrentSet) is list:
+                                for f in self.cbFilamentCurrentSet:
+                                    if callable(f):
+                                        f(self, newSetValue)
+                            elif callable(self.cbFilamentCurrentSet):
+                                self.cbFilamentCurrentSet(self, newSetValue)
+                        self.internal__signalCondition("filseta", newSetValue)
+                    except ValueError:
+                        pass
+            elif msg[0:len("off")] == "off":
+                if self.cbOff:
+                    if type(self.cbOff) is list:
+                        for f in self.cbOff:
+                            if callable(f):
+                                f(self)
+                    elif callable(self.cbOff):
+                        self.cbBeamon(self)
+
+                self.internal__signalCondition("off", True)
+            elif msg[0:len("ra:")] == "ra:":
+                try:
+                    current = float(msg[3:])
                     if self.cbFilamentCurrent:
                         if type(self.cbFilamentCurrent) is list:
                             for f in self.cbFilamentCurrent:
@@ -357,105 +466,16 @@ class ElectronGunControl:
                         elif callable(self.cbFilamentCurrent):
                             self.cbFilamentCurrent(self, current)
                     self.internal__signalCondition("af", current )
-                else:
-                    channel = int(msg[1])
-                    current = int(msg[3:])
-                    current = float(current) / 10
-                    if self.cbCurrent:
-                        if type(self.cbCurrent) is list:
-                            for f in self.cbCurrent:
-                                if callable(f):
-                                    f(self, channel, current)
-                        elif callable(self.cbCurrent):
-                            self.cbCurrent(self, channel, current)
-
-                    self.internal__signalCondition("a{}".format(channel), current )
-            except ValueError:
+                except ValueError:
+                    pass
+            elif msg[0:len("adc0:")] == "adc0:":
+                # ToDo
                 pass
-        elif msg[0:len("psustate")] == "psustate":
-            states = []
-            for i in range(4):
-                if msg[len("psustate") + i] == '-':
-                    states.append("off")
-                elif msg[len("psustate") + i] == 'C':
-                    states.append("current")
-                else:
-                    states.append("voltage")
-            if self.cbPSUMode:
-                if type(self.cbPSUMode) is list:
-                    for f in self.cbPSUMode:
-                        if callable(f):
-                            f(self, states)
-                elif callable(self.cbPSUMode):
-                    self.cbPSUMode(self, states)
-            self.internal__signalCondition("psustate", states )
-        elif msg[0:len("filseta:")] == "filseta:":
-            parts = msg.split(":")
-            if parts[1] == "disabled":
-                if self.cbFilamentCurrentSet:
-                    if type(self.cbFilamentCurrentSet) is list:
-                        for f in self.cbFilamentCurrentSet:
-                            if callable(f):
-                                f(self, None)
-                    elif callable(self.cbFilamentCurrentSet):
-                        self.cbFilamentCurrentSet(self, None)
-                self.internal__signalCondition("filseta", True )
+            
             else:
-                try:
-                    newSetValue = int(parts[1])
-                    if self.cbFilamentCurrentSet:
-                        if type(self.cbFilamentCurrentSet) is list:
-                            for f in self.cbFilamentCurrentSet:
-                                if callable(f):
-                                    f(self, newSetValue)
-                        elif callable(self.cbFilamentCurrentSet):
-                            self.cbFilamentCurrentSet(self, newSetValue)
-                    self.internal__signalCondition("filseta", newSetValue)
-                except ValueError:
-                    pass
-        elif msg[0:len("seta:")] == "seta:":
-            parts = msg.split(":")
-            if parts[1] == "disabled":
-                if self.cbFilamentCurrentSet:
-                    if type(self.cbFilamentCurrentSet) is list:
-                        for f in self.cbFilamentCurrentSet:
-                            if callable(f):
-                                f(self, None)
-                    elif callable(self.cbFilamentCurrentSet):
-                        self.cbFilamentCurrentSet(self, None)
-                self.internal__signalCondition("filseta", True )
-            else:
-                try:
-                    newSetValue = int(parts[1]) / 10.0
-                    if self.cbFilamentCurrentSet:
-                        if type(self.cbFilamentCurrentSet) is list:
-                            for f in self.cbFilamentCurrentSet:
-                                if callable(f):
-                                    f(self, newSetValue)
-                        elif callable(self.cbFilamentCurrentSet):
-                            self.cbFilamentCurrentSet(self, newSetValue)
-                    self.internal__signalCondition("filseta", newSetValue)
-                except ValueError:
-                    pass
-        elif msg[0:len("off")] == "off":
-            if self.cbOff:
-                if type(self.cbOff) is list:
-                    for f in self.cbOff:
-                        if callable(f):
-                            f(self)
-                elif callable(self.cbOff):
-                    self.cbBeamon(self)
-
-            self.internal__signalCondition("off", True)
-        elif msg[0:len("ra:")] == "ra:":
-            # ToDo
-            pass
-        elif msg[0:len("adc0:")] == "adc0:":
-            # ToDo
-            pass
-        
-        else:
-            print("Unknown message {}".format(msg))
+                print("Unknown message {}".format(msg))
+        except Exception as e:
+            print(f"Failed to handle message {msg}: {e}")
 
 
     def communicationThreadMain(self):
@@ -486,6 +506,10 @@ class ElectronGunControl:
                     if self.bufferInput.peek(i) == b'\n':
                         msg = self.bufferInput.read(i)
                         self.communicationThreadMain_HandleMessage(msg)
+                        break
+                    if (i > 2) and (self.bufferInput.peek(i) == b'$'):
+                        # We have seen another sync pattern symbol - we discard the previous message and restart ...
+                        self.bufferInput.discard(i-1)
                         break
         except serial.serialutil.SerialException:
             # Shutting down works via this exception
@@ -594,6 +618,10 @@ class ElectronGunControl:
         # Here we add a small delay to allow the serial buffer to be
         # fully flushed before we terminate our process so we can make sure
         # we really transmit the off condition
+
+        if sync:
+            self.internal__waitForMessageFilter("off")
+
         time.sleep(2)
 
     def noprotection(self, *ignore, sync = False):
@@ -700,7 +728,7 @@ class ElectronGunControl:
         except ValueError:
             raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
 
-        cmd = b'$$$setfila' + bytes(str(currentMa), encoding="ascii") + b'\n'
+        cmd = b'$$$setfila' + bytes(str(currentMa*10), encoding="ascii") + b'\n'
         self.port.write(cmd)
         self._lastcommand = cmd
 
@@ -717,8 +745,8 @@ class ElectronGunControl:
         self.port.write(cmd)
         self._lastcommand = cmd
 
-        if self.stabilizationDelay and sync:
-            time.sleep(self.stabilizationDelay)
+        if sync:
+            return self.internal__waitForMessageFilter("filseta")
 
     def setFilamentOff(self, *ignore, sync = False):
         if self.port == False:
@@ -728,8 +756,16 @@ class ElectronGunControl:
         self.port.write(cmd)
         self._lastcommand = cmd
 
-        if self.stabilizationDelay and sync:
-            time.sleep(self.stabilizationDelay)
+        if sync:
+            while True:
+                res = self.internal__waitForMessageFilter("filseta")
+                if res == "disabled":
+                    return res
+                try:
+                    if float(res) == 0:
+                        return res
+                except ValueError:
+                    pass
 
     def runInsulationTest(self, *ignore, sync = False):
         if self.port == False:
