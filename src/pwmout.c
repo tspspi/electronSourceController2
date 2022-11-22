@@ -2,9 +2,14 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-#define PWM_VPERDIV 3.1914893617
+#define PWM_VPERDIVK (3.24781922941*0.899405351856)
+#define PWM_VPERDIVW (3.49231230262*0.899009900992)
+#define PWM_VPERDIVFOC 3.137850885
+#define PWM_VPERDIV4 3.1914893617
 #define PWM_VPERUA 0.979959039479
 #define PWM_FILA_VPERDIV 0.224609375
+
+#define PWM_MAX_DIFFERENCE_W_K (75/PWM_VPERDIV)
 
 #define VMAXSLOPE_V_PER_S 12
 
@@ -71,6 +76,21 @@ ISR(TIMER2_COMPA_vect) {
     }
     slopeUpdateInterval = slopeUpdateInterval + 1;
 
+    /* Verify that W and K are not spaced too far ... */
+    #if 0
+    {
+        unsigned long int diff;
+        if(pwmoutOnCyclesReal[0] > pwmoutOnCyclesReal[2]) {
+            diff = pwmoutOnCyclesReal[0] - pwmoutOnCyclesReal[2];
+        } else {
+            diff = pwmoutOnCyclesReal[2] - pwmoutOnCyclesReal[0];
+        }
+        if(diff > PWM_MAX_DIFFERENCE_W_K) {
+            pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0];
+        }
+    }
+    #endif
+
     for(i = 0; i < sizeof(pwmoutCurrentCycles)/sizeof(uint16_t)-1; i=i+1) {
         pwmoutCurrentCycles[i] = (pwmoutCurrentCycles[i] + 1) & 0x3FF;
         if(pwmoutCurrentCycles[i] >= pwmoutOnCyclesReal[i]) {
@@ -129,13 +149,13 @@ void setPSUVolts(
     uint16_t v,
     uint8_t psu
 ) {
-    uint16_t dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIV);
-
+    uint16_t dutyCycleOn;
+    
     switch(psu) {
-        case 1:         pwmoutOnCycles[0] = dutyCycleOn; break;
-        case 2:         pwmoutOnCycles[2] = dutyCycleOn; break;
-        case 3:         pwmoutOnCycles[4] = dutyCycleOn; break;
-        case 4:         pwmoutOnCycles[6] = dutyCycleOn; break;
+        case 1:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVK); pwmoutOnCycles[0] = dutyCycleOn; break;
+        case 2:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVW); pwmoutOnCycles[2] = dutyCycleOn; break;
+        case 3:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVFOC); pwmoutOnCycles[4] = dutyCycleOn; break;
+        case 4:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIV4); pwmoutOnCycles[6] = dutyCycleOn; break;
         default:        return;
     }
 }
