@@ -4,7 +4,9 @@ import time
 import atexit
 import json
 
-print("Electron source controller: 0.0.35 (Sat, 2022-11-22)")
+egun_version = "0.0.36 (Sat, 2022-11-23)"
+
+print(f"Electron source controller: {egun_version}")
 
 from collections import deque
 
@@ -810,3 +812,38 @@ class ElectronGunControl:
         else:
             return None
 
+    def get_status(self):
+        # Synchronous fetching of system status ...
+
+        state = {}
+
+        state['pylib'] = egun_version
+        state['id'] = self.id(sync = True)
+        state['hv_voltage'] = [ ]
+        state['hv_current'] = [ ]
+        for psuidx in [ 1, 2, 3, 4 ]:
+            state['hv_voltage'].append(self.getPSUVoltage(psuidx, sync = True))
+            state['hv_current'].append(self.getPSUCurrent(psuidx, sync = True))
+        state['hv_modes'] = self.getPSUModes(sync = True)
+        state['filament_current'] = self.getFilamentCurrent(sync = True)
+
+        return state
+
+    def __str__(self):
+        state = self.get_status()
+
+        s = f"Electron Gun:\n"
+        s += f"\tPyLib version:\t{egun_version}\n"
+        s += f"\tController version: {state['id']['version']} (rev. {state['id']['revision']})\n"
+        s += f"\tHigh voltage supplies:\n"
+        s += f"\t\tCathode:\t\t{state['hv_voltage'][1]} V, {state['hv_current'][1] / 10.0} uA (mode {state['hv_modes'][1]})\n"
+        s += f"\t\tWhenelt cylinder:\t{state['hv_voltage'][0]} V, {state['hv_current'][0] / 10.0} uA (mode {state['hv_modes'][0]})\n"
+        s += f"\t\tFocus voltage:\t{state['hv_voltage'][2]} V, {state['hv_current'][2] / 10.0} uA (mode {state['hv_modes'][2]})\n"
+        s += f"\t\tAux supply:\t\t{state['hv_voltage'][3]} V, {state['hv_current'][3] / 10.0} uA (mode {state['hv_modes'][3]})\n"
+        s += f"\tFilament current:\n"
+        s += f"\t\tMeasured (high side controller): {state['filament_current']}\n"
+
+        return s
+
+    def __repr__(self):
+        return self.get_status()
