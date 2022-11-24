@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.36 (Sat, 2022-11-23)"
+egun_version = "0.0.37 (Sat, 2022-11-24)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -719,12 +719,16 @@ class ElectronGunControl:
             time.sleep(self.stabilizationDelay)
 
 
-    def setFilamentCurrent(self, currentMa, *ignore, sync = False):
+    def setFilamentCurrent(self, currentMa, *ignore, sync = False, noprotection = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
 
-        if (currentMa < 0) or (currentMa > 100):
-            raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
+        if noprotection:
+            if currentMa < 0:
+                raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
+        else:
+            if (currentMa < 0) or (currentMa > 100):
+                raise ElectronGunInvalidParameterException("Filament current has to be an integer in range 0 to 100 mA (in 100 uA steps)")
         try:
             currentMa = int(currentMa)
         except ValueError:
