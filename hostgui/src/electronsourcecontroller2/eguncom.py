@@ -785,6 +785,7 @@ class ElectronGunControl:
 
     def beamOn(self, *ignore, filament_current = None, sync = False):
         if filament_current is not None:
+            egun.setFilamentOff(sync = sync)
             egun.setFilamentCurrent(filament_current, sync = snyc)
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
