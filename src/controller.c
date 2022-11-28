@@ -11,6 +11,7 @@
 #include "./adc.h"
 #include "./psu.h"
 #include "./pwmout.h"
+#include "./cfgeeprom.h"
 
 /*
     Ramp controller
@@ -34,10 +35,10 @@ struct rampMode rampMode;
     assigns rampMode.filamentCurrent;
 
     ensures rampMode.mode == controllerRampMode__InsulationTest;
-    ensures rampMode.vTargets[0] == CONTROLLER_RAMP_TARGETV__K;
-    ensures rampMode.vTargets[1] == CONTROLLER_RAMP_TARGETV__W;
-    ensures rampMode.vTargets[2] == CONTROLLER_RAMP_TARGETV__FOC;
-    ensures rampMode.vTargets[3] == 0;
+    ensures rampMode.vTargets[0] == cfgOptions.beamOnRampTargets.cathode;
+    ensures rampMode.vTargets[1] == cfgOptions.beamOnRampTargets.wehneltCylinder;
+    ensures rampMode.vTargets[2] == cfgOptions.beamOnRampTargets.focus;
+    ensures rampMode.vTargets[3] == cfgOptions.beamOnRampTargets.aux;
     ensures rampMode.aTargetFilament == 0;
     ensures (rampMode.vCurrent[0] == 0) && (rampMode.vCurrent[1] == 0) && (rampMode.vCurrent[2] == 0);
     ensures rampMode.filamentCurrent == 0;
@@ -51,16 +52,20 @@ void rampStart_InsulationTest() {
     */
     for(i = 1; i < 5; i=i+1) {
         setPSUVolts(0, i);
-        setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
     }
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.cathode, 0);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.wehneltCylinder, 0);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.focus, 0);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.aux, 0);
+
     filamentCurrent_Enable(false);
     filamentCurrent_SetCurrent(0);
 
     rampMode.mode = controllerRampMode__InsulationTest;
-    rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
-    rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
-    rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
-    rampMode.vTargets[3] = 0;
+    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.cathode;
+    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[2] = cfgOptions.beamOnRampTargets.focus;
+    rampMode.vTargets[3] = cfgOptions.beamOnRampTargets.aux;
     rampMode.aTargetFilament = 0;
 
     rampMode.vCurrent[0] = 0;
@@ -81,16 +86,19 @@ void rampStart_BeamOn() {
         loop variant 5-i;
     */
     for(i = 1; i < 5; i=i+1) {
-        setPSUVolts(0, i);
-        setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT, i);
+        setPSUVolts(0, i);        
     }
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 0);
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 1);
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.focus, 2);
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.aux, 3);
     filamentCurrent_Enable(false);
 
     rampMode.mode = controllerRampMode__BeamOn;
-    rampMode.vTargets[0] = CONTROLLER_RAMP_TARGETV__K;
-    rampMode.vTargets[1] = CONTROLLER_RAMP_TARGETV__W;
-    rampMode.vTargets[2] = CONTROLLER_RAMP_TARGETV__FOC;
-    rampMode.vTargets[3] = 0;
+    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.cathode;
+    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[2] = cfgOptions.beamOnRampTargets.focus;
+    rampMode.vTargets[3] = cfgOptions.beamOnRampTargets.aux;
     rampMode.aTargetFilament = targetCurrent; /* We use the currently selected filament current as target */
 
     rampMode.vCurrent[0] = 0;
@@ -146,16 +154,17 @@ static void handleRamp() {
     */
     if((rampMode.mode == controllerRampMode__BeamOn) || (rampMode.mode == controllerRampMode__InsulationTest)) {
         if((rampMode.aTargetFilament != rampMode.filamentCurrent) && (rampMode.mode == controllerRampMode__BeamOn)) {
-            if(timeElapsed < CONTROLLER_RAMP_FILCURRENT_STEPDURATIONMILLIS) { return; }
+            if(timeElapsed < cfgOptions.ramps.stepDurationFilament) { return; }
 
             if(rampMode.filamentCurrent == 0) {
                 filamentCurrent_Enable(true);
-                for(i = 0; i < 4; i=i+1) {
-                    setPSUMicroamps(CONTROLLER_RAMP_VOLTAGE_CURRENTLIMIT_BEAM, i+1);
-                }
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 0);
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 1);
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.focus, 2);
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.aux, 3);
             }
 
-            rampMode.filamentCurrent = ((rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + CONTROLLER_RAMP_FILCURRENT_STEPSIZE);
+            rampMode.filamentCurrent = ((rampMode.filamentCurrent + cfgOptions.ramps.stepsizeFila) > rampMode.aTargetFilament) ? rampMode.aTargetFilament : (rampMode.filamentCurrent + cfgOptions.ramps.stepsizeFila);
             filamentCurrent_SetCurrent(rampMode.filamentCurrent);
             rampMode.clkLastTick = curTime;
             return;
@@ -167,7 +176,7 @@ static void handleRamp() {
         */
         if((rampMode.vCurrent[0] == 0) && (rampMode.vCurrent[1] == 0) && (rampMode.vCurrent[2] == 0) && (rampMode.vCurrent[3] == 0)) {
             /* This is the initial delay ... */
-            if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_INITDURATION) { return; }
+            if(timeElapsed < cfgOptions.ramps.initDuration) { return; }
 
             /* We start the sequence by setting voltage and PSU enable ... */
             /*@
@@ -177,7 +186,7 @@ static void handleRamp() {
                 loop variant 4-i;
             */
             for(i = 0; i < 4; i=i+1) {
-                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
+                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + cfgOptions.ramps.stepsizeV) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + cfgOptions.ramps.stepsizeV);
                 setPSUVolts(rampMode.vCurrent[i], i+1);
                 rampMessage_ReportVoltages();
             }
@@ -185,7 +194,7 @@ static void handleRamp() {
             return;
         }
         if((rampMode.vCurrent[0] != rampMode.vTargets[0]) || (rampMode.vCurrent[1] != rampMode.vTargets[1]) || (rampMode.vCurrent[2] != rampMode.vTargets[2]) || (rampMode.vCurrent[3] != rampMode.vTargets[3])) {
-            if(timeElapsed < CONTROLLER_RAMP_VOLTAGE_STEPDURATIONMILLIS) { return; }
+            if(timeElapsed < cfgOptions.ramps.stepDuration) { return; }
 
             /*@
                 loop invariant 0 <= i <= 4;
@@ -193,7 +202,7 @@ static void handleRamp() {
                 loop variant 4-i;
             */
             for(i = 0; i < 4; i=i+1) {
-                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + CONTROLLER_RAMP_VOLTAGE_STEPSIZE);
+                rampMode.vCurrent[i] = ((rampMode.vCurrent[i] + cfgOptions.ramps.stepsizeV) > rampMode.vTargets[i]) ? rampMode.vTargets[i] : (rampMode.vCurrent[i] + cfgOptions.ramps.stepsizeV);
                 setPSUVolts(rampMode.vCurrent[i], i+1);
                 rampMessage_ReportVoltages();
             }
@@ -279,6 +288,9 @@ int main() {
 
     /* Setup system clock */
     sysclockInit();
+
+    /* Load configuration values from EEPROM */
+    cfgeepromLoad();
 
     /*
         Setup serial

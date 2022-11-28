@@ -143,7 +143,7 @@ class ElectronGunControl:
     POLARITY_POS = b'p'
     POLARITY_NEG = b'n'
 
-    def __init__(self, portFile = None, commandRetries = 3, shutdownOnTerminate = True):
+    def __init__(self, portFile = None, commandRetries = 3, shutdownOnTerminate = False):
         self._shutdownOnTerminate = shutdownOnTerminate
         if not portFile:
             portFile = '/dev/ttyU0'
@@ -810,6 +810,145 @@ class ElectronGunControl:
             else:
                 return None
 
+    def getTargetVoltages(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$getvtarget')
+        self._lastcommand = b'$$$getvtarget'
+        if sync:
+            return self.internal__waitForMessageFilter("vtargets")
+        else:
+            return None
+
+    def getCurrentLimitBeam(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$getbeamcurlim')
+        self._lastcommand = b'$$$getbeamcurlim'
+        if sync:
+            return self.internal__waitForMessageFilter("beamcurlim")
+        else:
+            return None
+
+    def getCurrentLimitInsulation(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$getinsulcurlim')
+        self._lastcommand = b'$$$getinsulcurlim'
+        if sync:
+            return self.internal__waitForMessageFilter("insulcurlim")
+        else:
+            return None
+
+    def setTargetVoltage(self, *ignore, cathode = None, wehnelt = None, focus = None, aux = None):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if cathode is not None:
+            if (int(cathode) < 0) or (int(cathode) > 3250):
+                raise ValueError("Cathode voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setvtargetvk'
+            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if wehnelt is not None:
+            if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
+                raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setvtargetvw'
+            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if focus is not None:
+            if (int(focus) < 0) or (int(focus) > 3250):
+                raise ValueError("Focus voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setvtargetvf'
+            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if aux is not None:
+            if (int(aux) < 0) or (int(aux) > 3250):
+                raise ValueError("Aux voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setvtargetva'
+            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        time.sleep(5)
+
+    def setCurrentLimitBeam(self, *ignore, cathode = None, wehnelt = None, focus = None, aux = None):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if cathode is not None:
+            if (int(cathode) < 0) or (int(cathode) > 3250):
+                raise ValueError("Cathode voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setbeamcurlimk'
+            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if wehnelt is not None:
+            if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
+                raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setbeamcurlimw'
+            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if focus is not None:
+            if (int(focus) < 0) or (int(focus) > 3250):
+                raise ValueError("Focus voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setbeamcurlimf'
+            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if aux is not None:
+            if (int(aux) < 0) or (int(aux) > 3250):
+                raise ValueError("Aux voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setbeamcurlima'
+            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        time.sleep(5)
+
+    def setCurrentLimitInsulation(self, *ignore, cathode = None, wehnelt = None, focus = None, aux = None):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        if cathode is not None:
+            if (int(cathode) < 0) or (int(cathode) > 3250):
+                raise ValueError("Cathode voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setinsulcurlimk'
+            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if wehnelt is not None:
+            if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
+                raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setinsulcurlimw'
+            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if focus is not None:
+            if (int(focus) < 0) or (int(focus) > 3250):
+                raise ValueError("Focus voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setinsulcurlimf'
+            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if aux is not None:
+            if (int(aux) < 0) or (int(aux) > 3250):
+                raise ValueError("Aux voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setinsulcurlima'
+            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        time.sleep(5)
+
+    def setRampVoltageStepSize(self, vstep):
+        if (int(vstep) < 0) or (int(vstep) > 200):
+            raise ValueError("Voltage step size is our of range")
+        self.port.write(b'$$$setstepsizev' + bytes(str(vstep), encoding="ascii") + b'\n')
+        time.sleep(1)
+    def setRampVoltageFilamentCurrent(self, istep):
+        if (int(istep) < 0) or (int(istep) > 200):
+            raise ValueError("Current step size is out of range")
+        self.port.write(b'$$$setstepsizeila' + bytes(str(istep), encoding="ascii") + b'\n')
+
     def jabber(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
@@ -853,4 +992,4 @@ class ElectronGunControl:
         return s
 
     def __repr__(self):
-        return self.get_status()
+        return "Electron gun controller {egun_version}"
