@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.40 (Tue, 2022-11-29)"
+egun_version = "0.0.41 (Tue, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -984,28 +984,28 @@ class ElectronGunControl:
             if (int(cathode) < 0) or (int(cathode) > 3250):
                 raise ValueError("Cathode voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetvk'
-            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + bytes(str(cathode), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if wehnelt is not None:
             if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
                 raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetvw'
-            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + bytes(str(wehnelt), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if focus is not None:
             if (int(focus) < 0) or (int(focus) > 3250):
                 raise ValueError("Focus voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetvf'
-            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + bytes(str(focus), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if aux is not None:
             if (int(aux) < 0) or (int(aux) > 3250):
                 raise ValueError("Aux voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetva'
-            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + bytes(str(aux), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         time.sleep(5)
@@ -1017,28 +1017,28 @@ class ElectronGunControl:
             if (int(cathode) < 0) or (int(cathode) > 3250):
                 raise ValueError("Cathode voltage has to be in range from 0 to 3250")
             cmd = b'$$$setbeamcurlimk'
-            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + bytes(str(cathode), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if wehnelt is not None:
             if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
                 raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
             cmd = b'$$$setbeamcurlimw'
-            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + bytes(str(wehnelt), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if focus is not None:
             if (int(focus) < 0) or (int(focus) > 3250):
                 raise ValueError("Focus voltage has to be in range from 0 to 3250")
             cmd = b'$$$setbeamcurlimf'
-            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + bytes(str(focus), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if aux is not None:
             if (int(aux) < 0) or (int(aux) > 3250):
                 raise ValueError("Aux voltage has to be in range from 0 to 3250")
             cmd = b'$$$setbeamcurlima'
-            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + bytes(str(aux), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         time.sleep(5)
@@ -1050,28 +1050,28 @@ class ElectronGunControl:
             if (int(cathode) < 0) or (int(cathode) > 3250):
                 raise ValueError("Cathode voltage has to be in range from 0 to 3250")
             cmd = b'$$$setinsulcurlimk'
-            cmd = bytes(str(cathode), encoding="ascii")
+            cmd = cmd + bytes(str(cathode), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if wehnelt is not None:
             if (int(wehnelt) < 0) or (int(wehnelt) > 3250):
                 raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
             cmd = b'$$$setinsulcurlimw'
-            cmd = bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + bytes(str(wehnelt), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if focus is not None:
             if (int(focus) < 0) or (int(focus) > 3250):
                 raise ValueError("Focus voltage has to be in range from 0 to 3250")
             cmd = b'$$$setinsulcurlimf'
-            cmd = bytes(str(focus), encoding="ascii")
+            cmd = cmd + bytes(str(focus), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if aux is not None:
             if (int(aux) < 0) or (int(aux) > 3250):
                 raise ValueError("Aux voltage has to be in range from 0 to 3250")
             cmd = b'$$$setinsulcurlima'
-            cmd = bytes(str(aux), encoding="ascii")
+            cmd = cmd + bytes(str(aux), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         time.sleep(5)
@@ -1096,17 +1096,17 @@ class ElectronGunControl:
 
         if initDuration is not None:
             cmd = b'$$$setdurationinit'
-            cmd = bytes(str(initDuration), encoding="ascii")
+            cmd = cmd + bytes(str(initDuration), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if voltageStep is not None:
             cmd = b'$$$setdurationstepv'
-            cmd = bytes(str(voltageStep), encoding="ascii")
+            cmd = cmd + bytes(str(voltageStep), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if filamentStep is not None:
             cmd = b'$$$setdurationstepfila'
-            cmd = bytes(str(filamentStep), encoding="ascii")
+            cmd = cmd + bytes(str(filamentStep), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
 
