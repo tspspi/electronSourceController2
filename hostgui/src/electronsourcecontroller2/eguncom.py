@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.38 (Sat, 2022-11-29)"
+egun_version = "0.0.39 (Tue, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -471,9 +471,121 @@ class ElectronGunControl:
                 except ValueError:
                     pass
             elif msg[0:len("adc0:")] == "adc0:":
-                # ToDo
-                pass
-            
+                try:
+                    adcval = float(msg[5:])
+                    if self.cbADCRawValue:
+                        if type(self.cbADCRawValue) is list:
+                            for f in self.cbADCRawValue:
+                                if callable(f):
+                                    f(self, adcval)
+                        elif callable(self.cbADCRawValue):
+                            self.cbADCRawValue(self, adcval)
+                    self.internal__signalCondition("adc0", adcval)
+                except ValueError:
+                    pass
+            elif msg[0:len("vtargets:")] == "vtargets:":
+                try:
+                    parts = msg[len("vtargets:"):].split(":")
+                    if len(parts) != 4:
+                        raise ValueError("Invalid message")
+                    volts = {
+                        'cathode' : float(parts[0]),
+                        'wehnelt' : float(parts[1]),
+                        'focus' : float(parts[2]),
+                        'aux' : float(parts[3].strip())
+                    }
+                    if self.cbTargetVoltages:
+                        if type(self.cbTargetVoltages) is list:
+                            for f in self.cbTargetVoltages:
+                                if callable(f):
+                                    f(self, volts)
+                        elif callable(self.cbTargetVoltages):
+                            self.cbTargetVoltages(self, volts)
+                    self.internal__signalCondition("vtargets", volts)
+                except ValueError:
+                    pass
+            elif msg[0:len("beamcurlim:")] == "beamcurlim:":
+                try:
+                    parts = msg[len("beamcurlim:"):].split(":")
+                    if len(parts) != 4:
+                        raise ValueError("Invalid message")
+                    volts = {
+                        'cathode' : float(parts[0]),
+                        'wehnelt' : float(parts[1]),
+                        'focus' : float(parts[2]),
+                        'aux' : float(parts[3].strip())
+                    }
+                    if self.cbCurrentLimitBeam:
+                        if type(self.cbCurrentLimitBeam) is list:
+                            for f in self.cbCurrentLimitBeam:
+                                if callable(f):
+                                    f(self, volts)
+                        elif callable(self.cbCurrentLimitBeam):
+                            self.cbCurrentLimitBeam(self, volts)
+                    self.internal__signalCondition("beamcurlim", volts)
+                except ValueError:
+                    pass
+            elif msg[0:len("insulcurlim:")] == "insulcurlim:":
+                try:
+                    parts = msg[len("insulcurlim:"):].split(":")
+                    if len(parts) != 4:
+                        raise ValueError("Invalid message")
+                    volts = {
+                        'cathode' : float(parts[0]),
+                        'wehnelt' : float(parts[1]),
+                        'focus' : float(parts[2]),
+                        'aux' : float(parts[3].strip())
+                    }
+                    if self.cbCurrentLimitInsulationTest:
+                        if type(self.cbCurrentLimitInsulationTest) is list:
+                            for f in self.cbCurrentLimitInsulationTest:
+                                if callable(f):
+                                    f(self, volts)
+                        elif callable(self.cbCurrentLimitInsulationTest):
+                            self.cbCurrentLimitInsulationTest(self, volts)
+                    self.internal__signalCondition("insulcurlim", volts)
+                except ValueError:
+                    pass
+            elif msg[0:len("rampsteps:")] == "rampsteps:":
+                try:
+                    parts = msg[len("rampsteps:"):].split(":")
+                    if len(parts) != 2:
+                        raise ValueError("Invalid message")
+                    volts = {
+                        'volts' : float(parts[0]),
+                        'filamentamps' : float(parts[1].strip())
+                    }
+                    if self.cbRampSteps:
+                        if type(self.cbRampSteps) is list:
+                            for f in self.cbRampSteps:
+                                if callable(f):
+                                    f(self, volts)
+                        elif callable(self.cbRampSteps):
+                            self.cbRampSteps(self, volts)
+                    self.internal__signalCondition("rampsteps", volts)
+                except ValueError:
+                    pass
+            elif msg[0:len("rampdurations:")] == "rampdurations:":
+                try:
+                    parts = msg[len("rampdurations:"):].split(":")
+                    if len(parts) != 3:
+                        raise ValueError("Invalid message")
+                    volts = {
+                        'voltageStep' : float(parts[0]),
+                        'filamentStep' : float(parts[1]),
+                        'init' : float(parts[2].strip())
+                    }
+                    if self.cbRampSteps:
+                        if type(self.cbRampSteps) is list:
+                            for f in self.cbRampSteps:
+                                if callable(f):
+                                    f(self, volts)
+                        elif callable(self.cbRampSteps):
+                            self.cbRampSteps(self, volts)
+                    self.internal__signalCondition("rampdurations", volts)
+                except ValueError:
+                    pass
+
             else:
                 print("Unknown message {}".format(msg))
         except Exception as e:
@@ -846,7 +958,7 @@ class ElectronGunControl:
         self.port.write(b'$$$getstepsizes\n')
         self._lastcommand = b'$$$getstepsizes\n'
         if sync:
-            return self.internal__waitForMessageFilter("getstepsizes")
+            return self.internal__waitForMessageFilter("rampsteps")
         else:
             return None
 
@@ -856,7 +968,7 @@ class ElectronGunControl:
         self.port.write(b'$$$getdurations\n')
         self._lastcommand = b'$$$getdurations\n'
         if sync:
-            return self.internal__waitForMessageFilter("getdurations")
+            return self.internal__waitForMessageFilter("rampdurations")
         else:
             return None
 
