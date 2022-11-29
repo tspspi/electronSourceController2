@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.39 (Tue, 2022-11-29)"
+egun_version = "0.0.40 (Tue, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -189,6 +189,11 @@ class ElectronGunControl:
         self.cbBeamon = None
         self.cbFilamentCurrentSet = None
         self.cbOff = None
+        self.cbADCRawValue = None
+        self.cbCurrentLimitBeam = None
+        self.cbTargetVoltages = None
+        self.cbCurrentLimitInsulationTest = None
+        self.cbRampSteps = None
 
         # Currently introduce a delay to wait for the AVR board to reboot just in
         # case the main USB port has been used. Not a really clean solution but
