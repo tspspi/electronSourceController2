@@ -1133,7 +1133,7 @@ static uint32_t strASCIIToDecimal(
     return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221129_002\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221129_003\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -1416,16 +1416,16 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strCompare("adccalstore", 11, handleSerial0Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_CalStore();
     } else if(strCompare("setvtargetvk", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.cathode = newV;
     } else if(strCompare("setvtargetvw", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
     } else if(strCompare("setvtargetvf", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.focus = newV;
     } else if(strCompare("setvtargetva", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.aux = newV;
     } else if(strCompare("getvtarget", 10, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETVTARGET, sizeof(handleSerial0Messages_Response__GETVTARGET)-1);
@@ -1440,16 +1440,16 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
     } else if(strCompare("setbeamcurlimk", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.cathode = newV;
     } else if(strCompare("setbeamcurlimw", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.wehneltCylinder = newV;
     } else if(strCompare("setbeamcurlimf", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.focus = newV;
     } else if(strCompare("setbeamcurlima", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.aux = newV;
     } else if(strCompare("getbeamcurlim", 13, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETBEAMCURLIM, sizeof(handleSerial0Messages_Response__GETBEAMCURLIM)-1);
@@ -1464,16 +1464,16 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
     } else if(strCompare("setinsulcurlimk", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.cathode = newV;
     } else if(strCompare("setinsulcurlimw", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.wehneltCylinder = newV;
     } else if(strCompare("setinsulcurlimf", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.focus = newV;
     } else if(strCompare("setinsulcurlima", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.aux = newV;
     } else if(strCompare("getinsulcurlim", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETINSULCURLIM, sizeof(handleSerial0Messages_Response__GETINSULCURLIM)-1);
@@ -1488,10 +1488,10 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
     } else if(strCompare("setstepsizev", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.ramps.stepsizeV = newV;
     } else if(strCompare("setstepsizeila", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.ramps.stepsizeFila = newV;
     } else if(strCompare("getstepsizes", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETRAMPSTEPSIZES, sizeof(handleSerial0Messages_Response__GETRAMPSTEPSIZES)-1);
@@ -1502,13 +1502,13 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
     } else if(strCompare("setdurationstepv", 16, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[16]), dwLen-5);
         cfgOptions.ramps.stepDuration = newV;
     } else if(strCompare("setdurationstepfila", 19, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[19]), dwLen-5);
         cfgOptions.ramps.stepDurationFilament = newV;
     } else if(strCompare("setdurationinit", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.ramps.initDuration = newV;
     } else if(strCompare("getdurations", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETSTEPDURATIONS, sizeof(handleSerial0Messages_Response__GETSTEPDURATIONS)-1);
@@ -1921,13 +1921,13 @@ void handleSerial0Messages() {
     } else if(strCompare("adccalstore", 11, handleSerial1Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_CalStore();
     } else if(strCompare("setvtargetvw", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
     } else if(strCompare("setvtargetvf", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.focus = newV;
     } else if(strCompare("setvtargetva", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.beamOnRampTargets.aux = newV;
     } else if(strCompare("getvtarget", 10, handleSerial1Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETVTARGET, sizeof(handleSerial0Messages_Response__GETVTARGET)-1);
@@ -1942,16 +1942,16 @@ void handleSerial0Messages() {
         ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         serialModeTX1();
     } else if(strCompare("setbeamcurlimk", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.cathode = newV;
     } else if(strCompare("setbeamcurlimw", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.wehneltCylinder = newV;
     } else if(strCompare("setbeamcurlimf", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.focus = newV;
     } else if(strCompare("setbeamcurlima", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.beamOnCurrentLimits.aux = newV;
     } else if(strCompare("getbeamcurlim", 13, handleSerial1Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETBEAMCURLIM, sizeof(handleSerial0Messages_Response__GETBEAMCURLIM)-1);
@@ -1966,16 +1966,16 @@ void handleSerial0Messages() {
         ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         serialModeTX1();
     } else if(strCompare("setinsulcurlimk", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.cathode = newV;
     } else if(strCompare("setinsulcurlimw", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.wehneltCylinder = newV;
     } else if(strCompare("setinsulcurlimf", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.focus = newV;
     } else if(strCompare("setinsulcurlima", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.insulationCurrentLimits.aux = newV;
     } else if(strCompare("getinsulcurlim", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETINSULCURLIM, sizeof(handleSerial0Messages_Response__GETINSULCURLIM)-1);
@@ -1990,10 +1990,10 @@ void handleSerial0Messages() {
         ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         serialModeTX1();
     } else if(strCompare("setstepsizev", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-5);
         cfgOptions.ramps.stepsizeV = newV;
     } else if(strCompare("setstepsizeila", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[14]), dwLen-5);
         cfgOptions.ramps.stepsizeFila = newV;
     } else if(strCompare("getstepsizes", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETRAMPSTEPSIZES, sizeof(handleSerial0Messages_Response__GETRAMPSTEPSIZES)-1);
@@ -2004,13 +2004,13 @@ void handleSerial0Messages() {
         ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         serialModeTX1();
     } else if(strCompare("setdurationstepv", 16, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[16]), dwLen-5);
         cfgOptions.ramps.stepDuration = newV;
     } else if(strCompare("setdurationstepfila", 19, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[19]), dwLen-5);
         cfgOptions.ramps.stepDurationFilament = newV;
     } else if(strCompare("setdurationinit", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[15]), dwLen-5);
         cfgOptions.ramps.initDuration = newV;
     } else if(strCompare("getdurations", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETSTEPDURATIONS, sizeof(handleSerial0Messages_Response__GETSTEPDURATIONS)-1);
