@@ -1920,6 +1920,9 @@ void handleSerial0Messages() {
         filamentCurrent_CalHigh(highMilliamps);
     } else if(strCompare("adccalstore", 11, handleSerial1Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_CalStore();
+    } else if(strCompare("setvtargetvk", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
+        cfgOptions.beamOnRampTargets.cathode = newV;
     } else if(strCompare("setvtargetvw", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
