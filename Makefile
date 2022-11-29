@@ -8,13 +8,15 @@ SRCFILES=src/controller.c \
 	src/sysclock.c \
 	src/adc.c \
 	src/psu.c \
-	src/pwmout.c
+	src/pwmout.c \
+	src/cfgeeprom.c
 HEADFILES=src/controller.h \
 	src/serial.h \
 	src/sysclock.h \
 	src/adc.h \
 	src/psu.h \
-	src/pwmout.h
+	src/pwmout.h \
+	src/cfgeeprom.h
 
 all: bin/controller.hex
 
