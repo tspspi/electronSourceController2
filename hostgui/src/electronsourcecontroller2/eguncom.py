@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.37 (Sat, 2022-11-24)"
+egun_version = "0.0.38 (Sat, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -813,8 +813,8 @@ class ElectronGunControl:
     def getTargetVoltages(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
-        self.port.write(b'$$$getvtarget')
-        self._lastcommand = b'$$$getvtarget'
+        self.port.write(b'$$$getvtarget\n')
+        self._lastcommand = b'$$$getvtarget\n'
         if sync:
             return self.internal__waitForMessageFilter("vtargets")
         else:
@@ -823,8 +823,8 @@ class ElectronGunControl:
     def getCurrentLimitBeam(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
-        self.port.write(b'$$$getbeamcurlim')
-        self._lastcommand = b'$$$getbeamcurlim'
+        self.port.write(b'$$$getbeamcurlim\n')
+        self._lastcommand = b'$$$getbeamcurlim\n'
         if sync:
             return self.internal__waitForMessageFilter("beamcurlim")
         else:
@@ -833,10 +833,30 @@ class ElectronGunControl:
     def getCurrentLimitInsulation(self, *ignore, sync = False):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
-        self.port.write(b'$$$getinsulcurlim')
-        self._lastcommand = b'$$$getinsulcurlim'
+        self.port.write(b'$$$getinsulcurlim\n')
+        self._lastcommand = b'$$$getinsulcurlim\n'
         if sync:
             return self.internal__waitForMessageFilter("insulcurlim")
+        else:
+            return None
+
+    def getRampSteps(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$getstepsizes\n')
+        self._lastcommand = b'$$$getstepsizes\n'
+        if sync:
+            return self.internal__waitForMessageFilter("getstepsizes")
+        else:
+            return None
+
+    def getRampDurations(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$getdurations\n')
+        self._lastcommand = b'$$$getdurations\n'
+        if sync:
+            return self.internal__waitForMessageFilter("getdurations")
         else:
             return None
 
@@ -948,6 +968,30 @@ class ElectronGunControl:
         if (int(istep) < 0) or (int(istep) > 200):
             raise ValueError("Current step size is out of range")
         self.port.write(b'$$$setstepsizeila' + bytes(str(istep), encoding="ascii") + b'\n')
+
+    def setRampDurations(self, *ignore, initDuration = None, voltageStep = None, filamentStep = None):
+        if (initDuration is not None) and (initDuration <= 0):
+            raise ValueError("Init duration is out of range")
+        if (voltageStep is not None) and (voltageStep <= 0):
+            raise ValueError("Voltage stepsize is out of range")
+        if (filamentStep is not None) and (filamentStep <= 0):
+            raise ValueError("Filament stepsize is out of range")
+
+        if initDuration is not None:
+            cmd = b'$$$setdurationinit'
+            cmd = bytes(str(initDuration), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if voltageStep is not None:
+            cmd = b'$$$setdurationstepv'
+            cmd = bytes(str(voltageStep), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if filamentStep is not None:
+            cmd = b'$$$setdurationstepfila'
+            cmd = bytes(str(filamentStep), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
 
     def jabber(self, *ignore, sync = False):
         if self.port == False:
