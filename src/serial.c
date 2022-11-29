@@ -1133,7 +1133,7 @@ static uint32_t strASCIIToDecimal(
     return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221129_001\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221129_002\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -1920,6 +1920,108 @@ void handleSerial0Messages() {
         filamentCurrent_CalHigh(highMilliamps);
     } else if(strCompare("adccalstore", 11, handleSerial1Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_CalStore();
+    } else if(strCompare("setvtargetvw", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
+    } else if(strCompare("setvtargetvf", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnRampTargets.focus = newV;
+    } else if(strCompare("setvtargetva", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnRampTargets.aux = newV;
+    } else if(strCompare("getvtarget", 10, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETVTARGET, sizeof(handleSerial0Messages_Response__GETVTARGET)-1);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.cathode);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.wehneltCylinder);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.focus);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.aux);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
+    } else if(strCompare("setbeamcurlimk", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnCurrentLimits.cathode = newV;
+    } else if(strCompare("setbeamcurlimw", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnCurrentLimits.wehneltCylinder = newV;
+    } else if(strCompare("setbeamcurlimf", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnCurrentLimits.focus = newV;
+    } else if(strCompare("setbeamcurlima", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.beamOnCurrentLimits.aux = newV;
+    } else if(strCompare("getbeamcurlim", 13, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETBEAMCURLIM, sizeof(handleSerial0Messages_Response__GETBEAMCURLIM)-1);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnCurrentLimits.cathode);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnCurrentLimits.wehneltCylinder);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnCurrentLimits.focus);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnCurrentLimits.aux);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
+    } else if(strCompare("setinsulcurlimk", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.insulationCurrentLimits.cathode = newV;
+    } else if(strCompare("setinsulcurlimw", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.insulationCurrentLimits.wehneltCylinder = newV;
+    } else if(strCompare("setinsulcurlimf", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.insulationCurrentLimits.focus = newV;
+    } else if(strCompare("setinsulcurlima", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.insulationCurrentLimits.aux = newV;
+    } else if(strCompare("getinsulcurlim", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETINSULCURLIM, sizeof(handleSerial0Messages_Response__GETINSULCURLIM)-1);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.insulationCurrentLimits.cathode);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.insulationCurrentLimits.wehneltCylinder);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.insulationCurrentLimits.focus);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.insulationCurrentLimits.aux);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
+    } else if(strCompare("setstepsizev", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.ramps.stepsizeV = newV;
+    } else if(strCompare("setstepsizeila", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.ramps.stepsizeFila = newV;
+    } else if(strCompare("getstepsizes", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETRAMPSTEPSIZES, sizeof(handleSerial0Messages_Response__GETRAMPSTEPSIZES)-1);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.ramps.stepsizeV);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.ramps.stepsizeFila);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
+    } else if(strCompare("setdurationstepv", 16, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.ramps.stepDuration = newV;
+    } else if(strCompare("setdurationstepfila", 19, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.ramps.stepDurationFilament = newV;
+    } else if(strCompare("setdurationinit", 15, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[11]), dwLen-5);
+        cfgOptions.ramps.initDuration = newV;
+    } else if(strCompare("getdurations", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__GETSTEPDURATIONS, sizeof(handleSerial0Messages_Response__GETSTEPDURATIONS)-1);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.ramps.stepDuration);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.ramps.stepDurationFilament);
+        ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.ramps.initDuration);
+        ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
+        serialModeTX1();
     #ifdef DEBUG
         } else if(strCompare("rawadc", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Deliver raw adc value of frist channel for testing purpose ... */
