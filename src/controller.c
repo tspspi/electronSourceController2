@@ -35,8 +35,8 @@ struct rampMode rampMode;
     assigns rampMode.filamentCurrent;
 
     ensures rampMode.mode == controllerRampMode__InsulationTest;
-    ensures rampMode.vTargets[0] == cfgOptions.beamOnRampTargets.cathode;
-    ensures rampMode.vTargets[1] == cfgOptions.beamOnRampTargets.wehneltCylinder;
+    ensures rampMode.vTargets[1] == cfgOptions.beamOnRampTargets.cathode;
+    ensures rampMode.vTargets[0] == cfgOptions.beamOnRampTargets.wehneltCylinder;
     ensures rampMode.vTargets[2] == cfgOptions.beamOnRampTargets.focus;
     ensures rampMode.vTargets[3] == cfgOptions.beamOnRampTargets.aux;
     ensures rampMode.aTargetFilament == 0;
@@ -53,17 +53,17 @@ void rampStart_InsulationTest() {
     for(i = 1; i < 5; i=i+1) {
         setPSUVolts(0, i);
     }
-    setPSUMicroamps(cfgOptions.insulationCurrentLimits.cathode, 0);
     setPSUMicroamps(cfgOptions.insulationCurrentLimits.wehneltCylinder, 0);
-    setPSUMicroamps(cfgOptions.insulationCurrentLimits.focus, 0);
-    setPSUMicroamps(cfgOptions.insulationCurrentLimits.aux, 0);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.cathode, 1);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.focus, 2);
+    setPSUMicroamps(cfgOptions.insulationCurrentLimits.aux, 3);
 
     filamentCurrent_Enable(false);
     filamentCurrent_SetCurrent(0);
 
     rampMode.mode = controllerRampMode__InsulationTest;
-    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.cathode;
-    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.cathode;
     rampMode.vTargets[2] = cfgOptions.beamOnRampTargets.focus;
     rampMode.vTargets[3] = cfgOptions.beamOnRampTargets.aux;
     rampMode.aTargetFilament = 0;
@@ -88,15 +88,15 @@ void rampStart_BeamOn() {
     for(i = 1; i < 5; i=i+1) {
         setPSUVolts(0, i);        
     }
-    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 0);
-    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 1);
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 0);
+    setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 1);
     setPSUMicroamps(cfgOptions.beamOnCurrentLimits.focus, 2);
     setPSUMicroamps(cfgOptions.beamOnCurrentLimits.aux, 3);
     filamentCurrent_Enable(false);
 
     rampMode.mode = controllerRampMode__BeamOn;
-    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.cathode;
-    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[0] = cfgOptions.beamOnRampTargets.wehneltCylinder;
+    rampMode.vTargets[1] = cfgOptions.beamOnRampTargets.cathode;
     rampMode.vTargets[2] = cfgOptions.beamOnRampTargets.focus;
     rampMode.vTargets[3] = cfgOptions.beamOnRampTargets.aux;
     rampMode.aTargetFilament = targetCurrent; /* We use the currently selected filament current as target */
@@ -158,8 +158,8 @@ static void handleRamp() {
 
             if(rampMode.filamentCurrent == 0) {
                 filamentCurrent_Enable(true);
-                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 0);
-                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 1);
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.wehneltCylinder, 0);
+                setPSUMicroamps(cfgOptions.beamOnCurrentLimits.cathode, 1);
                 setPSUMicroamps(cfgOptions.beamOnCurrentLimits.focus, 2);
                 setPSUMicroamps(cfgOptions.beamOnCurrentLimits.aux, 3);
             }
