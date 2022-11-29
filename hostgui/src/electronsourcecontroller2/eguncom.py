@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.41 (Tue, 2022-11-29)"
+egun_version = "0.0.42 (Tue, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -902,8 +902,8 @@ class ElectronGunControl:
 
     def beamOn(self, *ignore, filament_current = None, sync = False):
         if filament_current is not None:
-            egun.setFilamentOff(sync = sync)
-            egun.setFilamentCurrent(filament_current, sync = snyc)
+            self.setFilamentOff(sync = sync)
+            self.setFilamentCurrent(filament_current, sync = snyc)
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$beamon\n')
@@ -998,7 +998,7 @@ class ElectronGunControl:
             if (int(focus) < 0) or (int(focus) > 3250):
                 raise ValueError("Focus voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetvf'
-            cmd = cmd + bytes(str(focus), encoding="ascii")
+            cmd = cmd + bytes(str(int(focus)), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if aux is not None:
