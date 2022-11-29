@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.42 (Tue, 2022-11-29)"
+egun_version = "0.0.43 (Tue, 2022-11-29)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -903,7 +903,7 @@ class ElectronGunControl:
     def beamOn(self, *ignore, filament_current = None, sync = False):
         if filament_current is not None:
             self.setFilamentOff(sync = sync)
-            self.setFilamentCurrent(filament_current, sync = snyc)
+            self.setFilamentCurrent(filament_current, sync = sync)
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         self.port.write(b'$$$beamon\n')
