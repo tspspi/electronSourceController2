@@ -1153,4 +1153,4 @@ class ElectronGunControl:
         return s
 
     def __repr__(self):
-        return "Electron gun controller {egun_version}"
+        return f"Electron gun controller {egun_version}"
