@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.44 (Tue, 2022-12-06)"
+egun_version = "0.0.45 (Tue, 2022-12-06)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -802,7 +802,20 @@ class ElectronGunControl:
         self.port.write(cmd)
         self._lastcommand = cmd
 
-        if self.stabilizationDelay and sync:
+        if sync:
+            tstart = time.time()
+            while True:
+                currentVoltage = self.getPSUVoltage(channel, sync = True)
+                if currentVoltage is None:
+                    time.sleep(1)
+                else:
+                    if abs(currentVoltage - voltage) < 5:
+                        break
+                if (time.time() - tstart) > 120:
+                    raise ElectronGunCommunicationException(f"Timeout waiting for setPSUVoltage {voltage} on supply {channel}")
+            if self.stabilizationDelay:
+                time.sleep(self.stabilizationDelay)
+        elif self.stabilizationDelay:
             time.sleep(self.stabilizationDelay)
 
     def setPSUCurrentMicroamps(self, channel, current, *ignore, sync = False):
