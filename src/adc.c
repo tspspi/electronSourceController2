@@ -87,6 +87,7 @@ void adcInit() {
     ADCSRA = ADCSRA | 0x40; /* Start first conversion ... */
 }
 
+
 #ifdef __cplusplus
     } /* extern "C" { */
 #endif

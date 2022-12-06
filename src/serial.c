@@ -13,6 +13,9 @@
 #include "./pwmout.h"
 #include "./cfgeeprom.h"
 
+static void adcCalibrateHVPS_Volts();
+static void adcCalibrateHVPS_Amps();
+
 static volatile unsigned long int dwFilament__SetCurrent;
 static volatile bool bFilament__EnableCurrent;
 
@@ -29,23 +32,23 @@ static volatile bool bFilament__EnableCurrent;
 */
 /*@
     requires (adcCounts >= 0) && (adcCounts < 1024);
-    assigns \nothing;
-    ensures \result == (uint16_t)(3.221407 * adcCounts);
 */
 static inline uint16_t serialADC2VoltsHCP(
-    uint16_t adcCounts
+    uint16_t adcCounts,
+    uint8_t channel
 ) {
-    return (uint16_t)((double)(adcCounts) * 3.1738 * 1.015);
+    return (uint16_t)(((double)(adcCounts)) * cfgOptions.psuADCCalibration.channel[(channel-1)*2].k + cfgOptions.psuADCCalibration.channel[(channel-1)*2].d);
 }
 /*@
     requires (adcCounts >= 0) && (adcCounts < 1024);
     assigns \nothing;
-    ensures \result == (uint16_t)(9.765625 * adcCounts);
 */
 static inline uint16_t serialADC2TenthMicroampsHCP(
-    uint16_t adcCounts
+    uint16_t adcCounts,
+    uint8_t channel
 ) {
-    return (uint16_t)((double)(adcCounts) * 9.765625);
+    return (uint16_t)(((double)(adcCounts)) * cfgOptions.psuADCCalibration.channel[(channel-1)*2 + 1].k + cfgOptions.psuADCCalibration.channel[(channel-1)*2 + 1].d);
+    /* return (uint16_t)((double)(adcCounts) * 9.765625); */
 }
 static inline uint16_t serialADC2MilliampsFILA(
     uint16_t adcCounts
@@ -1133,7 +1136,7 @@ static uint32_t strASCIIToDecimal(
     return currentValue;
 }
 
-static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221129_006\n";
+static unsigned char handleSerial0Messages_Response__ID[] = "$$$electronctrl_20221206_001\n";
 static unsigned char handleSerial0Messages_Response__ERR[] = "$$$err\n";
 static unsigned char handleSerial0Messages_Response__VN_Part[] = "$$$v";
 static unsigned char handleSerial0Messages_Response__AN_Part[] = "$$$a";
@@ -1196,7 +1199,7 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[0];
             sei();
         }
-        v = serialADC2VoltsHCP(v);
+        v = serialADC2VoltsHCP(v, 1);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '1');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1210,7 +1213,7 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[2];
             sei();
         }
-        v = serialADC2VoltsHCP(v);
+        v = serialADC2VoltsHCP(v, 2);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '2');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1224,7 +1227,7 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[4];
             sei();
         }
-        v = serialADC2VoltsHCP(v);
+        v = serialADC2VoltsHCP(v, 3);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '3');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1238,7 +1241,7 @@ static void handleSerial0Messages_CompleteMessage(
             v = currentADC[6];
             sei();
         }
-        v = serialADC2VoltsHCP(v);
+        v = serialADC2VoltsHCP(v, 4);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '4');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1252,7 +1255,7 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[1];
             sei();
         }
-        a = serialADC2TenthMicroampsHCP(a);
+        a = serialADC2TenthMicroampsHCP(a, 1);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '1');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1266,7 +1269,7 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[3];
             sei();
         }
-        a = serialADC2TenthMicroampsHCP(a);
+        a = serialADC2TenthMicroampsHCP(a, 2);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '2');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1280,7 +1283,7 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[5];
             sei();
         }
-        a = serialADC2TenthMicroampsHCP(a);
+        a = serialADC2TenthMicroampsHCP(a, 3);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '3');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1294,7 +1297,7 @@ static void handleSerial0Messages_CompleteMessage(
             a = currentADC[7];
             sei();
         }
-        a = serialADC2TenthMicroampsHCP(a);
+        a = serialADC2TenthMicroampsHCP(a, 4);
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, '4');
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1520,6 +1523,11 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.ramps.initDuration);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
+    } else if(strCompare("calhvpsu", 8, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        /* Calibrate so ADC value relfects current set value for all 4 PSUs */
+        adcCalibrateHVPS_Volts();
+    } else if(strCompare("calhvpsuamp", 11, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        adcCalibrateHVPS_Amps();
     } else if(strCompare("storesettings", 13, handleSerial0Messages_StringBuffer, dwLen) == true) {
         cfgeepromStore();
 #ifdef DEBUG
@@ -1703,7 +1711,7 @@ void handleSerial0Messages() {
                 v = currentADC[0];
                 sei();
             }
-            v = serialADC2VoltsHCP(v);
+            v = serialADC2VoltsHCP(v, 1);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '1');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1717,7 +1725,7 @@ void handleSerial0Messages() {
                 v = currentADC[2];
                 sei();
             }
-            v = serialADC2VoltsHCP(v);
+            v = serialADC2VoltsHCP(v, 2);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '2');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1731,7 +1739,7 @@ void handleSerial0Messages() {
                 v = currentADC[4];
                 sei();
             }
-            v = serialADC2VoltsHCP(v);
+            v = serialADC2VoltsHCP(v, 3);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '3');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1745,7 +1753,7 @@ void handleSerial0Messages() {
                 v = currentADC[6];
                 sei();
             }
-            v = serialADC2VoltsHCP(v);
+            v = serialADC2VoltsHCP(v, 4);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '4');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1759,7 +1767,7 @@ void handleSerial0Messages() {
                 a = currentADC[1];
                 sei();
             }
-            a = serialADC2TenthMicroampsHCP(a);
+            a = serialADC2TenthMicroampsHCP(a, 1);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '1');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1773,7 +1781,7 @@ void handleSerial0Messages() {
                 a = currentADC[3];
                 sei();
             }
-            a = serialADC2TenthMicroampsHCP(a);
+            a = serialADC2TenthMicroampsHCP(a, 2);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '2');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1787,7 +1795,7 @@ void handleSerial0Messages() {
                 a = currentADC[5];
                 sei();
             }
-            a = serialADC2TenthMicroampsHCP(a);
+            a = serialADC2TenthMicroampsHCP(a, 3);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '3');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -1801,7 +1809,7 @@ void handleSerial0Messages() {
                 a = currentADC[7];
                 sei();
             }
-            a = serialADC2TenthMicroampsHCP(a);
+            a = serialADC2TenthMicroampsHCP(a, 4);
             ringBuffer_WriteChars(&serialRB1_TX, handleSerial0Messages_Response__AN_Part, sizeof(handleSerial0Messages_Response__AN_Part)-1);
             ringBuffer_WriteChar(&serialRB1_TX, '4');
             ringBuffer_WriteChar(&serialRB1_TX, ':');
@@ -2029,6 +2037,11 @@ void handleSerial0Messages() {
         serialModeTX1();
     } else if(strCompare("storesettings", 13, handleSerial1Messages_StringBuffer, dwLen) == true) {
         cfgeepromStore();
+    } else if(strCompare("calhvpsu", 8, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        /* Calibrate so ADC value relfects current set value for all 4 PSUs */
+        adcCalibrateHVPS_Volts();
+    } else if(strCompare("calhvpsuamp", 11, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        adcCalibrateHVPS_Amps();
     #ifdef DEBUG
         } else if(strCompare("rawadc", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
             /* Deliver raw adc value of frist channel for testing purpose ... */
@@ -2335,7 +2348,7 @@ void rampMessage_ReportVoltages() {
             v = currentADC[i*2];
             sei();
         }
-        v = serialADC2VoltsHCP(v);
+        v = serialADC2VoltsHCP(v, i+1);
 
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__VN_Part, sizeof(handleSerial0Messages_Response__VN_Part)-1);
         ringBuffer_WriteChar(&serialRB0_TX, 0x31+i);
@@ -2526,4 +2539,61 @@ void filamentCurrent_EnableProtection(bool bEnabled) {
         ringBuffer_WriteChars(&serialRB2_TX, filamentCurrent__Msg_DisableProt, sizeof(filamentCurrent__Msg_DisableProt)-1);
     }
     serialModeTX2();
+}
+
+static void adcCalibrateHVPS_Volts() {
+    unsigned long int i;
+
+    /* Perform two-point calibration for voltage of ADCs */
+    if(psuStates[0].setVTarget == 0) {
+        /* Low point just records ADC values */
+        cfgOptions.psuADCCalibration.channel[0].adc0 = currentADC[0];
+        cfgOptions.psuADCCalibration.channel[2].adc0 = currentADC[2];
+        cfgOptions.psuADCCalibration.channel[4].adc0 = currentADC[4];
+        cfgOptions.psuADCCalibration.channel[6].adc0 = currentADC[6];
+    } else {
+        /* High point */
+        cfgOptions.psuADCCalibration.channel[0].adc1 = currentADC[0];
+        cfgOptions.psuADCCalibration.channel[0].vhigh = psuStates[0].setVTarget;
+        cfgOptions.psuADCCalibration.channel[2].adc1 = currentADC[2];
+        cfgOptions.psuADCCalibration.channel[2].vhigh = psuStates[1].setVTarget;
+        cfgOptions.psuADCCalibration.channel[4].adc1 = currentADC[4];
+        cfgOptions.psuADCCalibration.channel[4].vhigh = psuStates[2].setVTarget;
+        cfgOptions.psuADCCalibration.channel[6].adc1 = currentADC[6];
+        cfgOptions.psuADCCalibration.channel[6].vhigh = psuStates[3].setVTarget;
+
+        /* Perform calculations */
+        for(i = 0; i < 4; i=i+1) {
+            cfgOptions.psuADCCalibration.channel[i << 1].k = (uint16_t)((double)(cfgOptions.psuADCCalibration.channel[i << 1].vhigh) / ((double)(cfgOptions.psuADCCalibration.channel[i << 1].adc1) - (double)(cfgOptions.psuADCCalibration.channel[i << 1].adc0)));
+            cfgOptions.psuADCCalibration.channel[i << 1].d = (uint16_t)((double)(cfgOptions.psuADCCalibration.channel[i << 1].vhigh) / ((double)(cfgOptions.psuADCCalibration.channel[i << 1].adc1) - (double)(cfgOptions.psuADCCalibration.channel[i << 1].adc0)) * (double)(cfgOptions.psuADCCalibration.channel[i << 1].adc0));
+        }
+    }
+}
+
+static void adcCalibrateHVPS_Amps() {
+    unsigned long int i;
+    /* Perform two-point calibration for voltage of ADCs */
+    if(psuStates[0].setVTarget == 0) {
+        /* Low point just records ADC values */
+        cfgOptions.psuADCCalibration.channel[1].adc0 = currentADC[0];
+        cfgOptions.psuADCCalibration.channel[3].adc0 = currentADC[2];
+        cfgOptions.psuADCCalibration.channel[5].adc0 = currentADC[4];
+        cfgOptions.psuADCCalibration.channel[7].adc0 = currentADC[6];
+    } else {
+        /* High point */
+        cfgOptions.psuADCCalibration.channel[1].adc1 = currentADC[0];
+        cfgOptions.psuADCCalibration.channel[1].vhigh = psuStates[0].setILimit;
+        cfgOptions.psuADCCalibration.channel[3].adc1 = currentADC[2];
+        cfgOptions.psuADCCalibration.channel[3].vhigh = psuStates[1].setILimit;
+        cfgOptions.psuADCCalibration.channel[5].adc1 = currentADC[4];
+        cfgOptions.psuADCCalibration.channel[5].vhigh = psuStates[2].setILimit;
+        cfgOptions.psuADCCalibration.channel[7].adc1 = currentADC[6];
+        cfgOptions.psuADCCalibration.channel[7].vhigh = psuStates[3].setILimit;
+
+        /* Perform calculations */
+        for(i = 0; i < 4; i=i+1) {
+            cfgOptions.psuADCCalibration.channel[(i << 1) + 1].k = (uint16_t)((double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].vhigh) / ((double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].adc1) - (double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].adc0)));
+            cfgOptions.psuADCCalibration.channel[(i << 1) + 1].d = (uint16_t)((double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].vhigh) / ((double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].adc1) - (double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].adc0)) * (double)(cfgOptions.psuADCCalibration.channel[(i << 1) + 1].adc0));
+        }
+    }
 }

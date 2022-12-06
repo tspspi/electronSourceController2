@@ -38,6 +38,19 @@ struct cfgOptions {
 		unsigned long int initDuration;
 		unsigned long int stepDurationFilament;
 	} ramps;
+
+	struct {
+		struct {
+			/* Just a simple linear model ...*/
+			double k;
+			double d;
+
+			/* Calibration values */
+			uint16_t adc0;
+			uint16_t adc1;
+			uint16_t vhigh;
+		} channel[8];
+	} psuADCCalibration;
 };
 
 void cfgeepromLoad();

@@ -152,10 +152,10 @@ void setPSUVolts(
     uint16_t dutyCycleOn;
     
     switch(psu) {
-        case 1:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVK); pwmoutOnCycles[0] = dutyCycleOn; break;
-        case 2:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVW); pwmoutOnCycles[2] = dutyCycleOn; break;
-        case 3:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVFOC); pwmoutOnCycles[4] = dutyCycleOn; break;
-        case 4:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIV4); pwmoutOnCycles[6] = dutyCycleOn; break;
+        case 1:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVK); pwmoutOnCycles[0] = dutyCycleOn; psuStates[0].setVTarget = v; break;
+        case 2:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVW); pwmoutOnCycles[2] = dutyCycleOn; psuStates[1].setVTarget = v;break;
+        case 3:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIVFOC); pwmoutOnCycles[4] = dutyCycleOn; psuStates[2].setVTarget = v;break;
+        case 4:         dutyCycleOn = (uint16_t)(((double)v) / PWM_VPERDIV4); pwmoutOnCycles[6] = dutyCycleOn; psuStates[3].setVTarget = v;break;
         default:        return;
     }
 }
@@ -167,10 +167,10 @@ void setPSUMicroamps(
     uint16_t dutyCycleOn = (uint16_t)(((double)ua) / PWM_VPERUA);
 
     switch(psu) {
-        case 1:         pwmoutOnCycles[1] = dutyCycleOn; break;
-        case 2:         pwmoutOnCycles[3] = dutyCycleOn; break;
-        case 3:         pwmoutOnCycles[5] = dutyCycleOn; break;
-        case 4:         pwmoutOnCycles[7] = dutyCycleOn; break;
+        case 1:         pwmoutOnCycles[1] = dutyCycleOn; psuStates[0].setILimit = ua; break;
+        case 2:         pwmoutOnCycles[3] = dutyCycleOn; psuStates[1].setILimit = ua; break;
+        case 3:         pwmoutOnCycles[5] = dutyCycleOn; psuStates[2].setILimit = ua; break;
+        case 4:         pwmoutOnCycles[7] = dutyCycleOn; psuStates[3].setILimit = ua; break;
         default:        return;
     }
 }

@@ -30,6 +30,15 @@ struct cfgOptions cfgOptions_Default = {
 		900000, /* Step duration */
 		10000000, /* Init duration */
 		250000 /* Filament step duration */
+	},
+	{
+		/* PSU readout defaults */
+		{
+			{ 3.221407, 0.0 }, { 9.765625 },
+			{ 3.221407, 0.0 }, { 9.765625 },
+			{ 3.221407, 0.0 }, { 9.765625 },
+			{ 3.221407, 0.0 }, { 9.765625 }
+		}
 	}
 };
 
