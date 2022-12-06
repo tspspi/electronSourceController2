@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.43 (Tue, 2022-11-29)"
+egun_version = "0.0.44 (Tue, 2022-12-06)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -1109,6 +1109,25 @@ class ElectronGunControl:
             cmd = cmd + bytes(str(filamentStep), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
+
+    def storeSettings(self):
+        self.port.write(b'$$$storesettings\n');
+
+    def hvpsCalibrateADCPointVolts(self):
+        # This method is used interactively _with unplugged PSU_. The PSU is first set to 0 volts,
+        # then the PSU is given time to converge and then this method is executed
+        # when the displays read 0. Then a voltage is set, the PSU is allowed to
+        # converge and the routine is executed a second time. This will calibrate
+        # the ADC to measure correct voltage.
+        self.port.write(b'$$$calhvpsu\n')
+
+    def hvpsCalibrateADCPointAmps(self):
+        # This method is used interactively _with unplugged PSU_. The PSU is first set to 0 volts,
+        # then the PSU is given time to converge and then this method is executed
+        # when the displays read 0. Then a voltage is set, the PSU is allowed to
+        # converge and the routine is executed a second time. This will calibrate
+        # the ADC to measure correct voltage.
+        self.port.write(b'$$$calhvpsuamp\n')
 
     def jabber(self, *ignore, sync = False):
         if self.port == False:
