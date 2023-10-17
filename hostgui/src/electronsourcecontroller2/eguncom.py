@@ -496,8 +496,9 @@ class ElectronGunControl:
                     volts = {
                         'cathode' : float(parts[0]),
                         'wehnelt' : float(parts[1]),
-                        'focus' : float(parts[2]),
-                        'aux' : float(parts[3].strip())
+                        'wehneltBlank' : float(parts[2]),
+                        'focus' : float(parts[3]),
+                        'aux' : float(parts[4].strip())
                     }
                     if self.cbTargetVoltages:
                         if type(self.cbTargetVoltages) is list:
@@ -990,7 +991,7 @@ class ElectronGunControl:
         else:
             return None
 
-    def setTargetVoltage(self, *ignore, cathode = None, wehnelt = None, focus = None, aux = None):
+    def setTargetVoltage(self, *ignore, cathode = None, wehnelt = None, wehneltBlank = None, focus = None, aux = None):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
         if cathode is not None:
@@ -1005,6 +1006,13 @@ class ElectronGunControl:
                 raise ValueError("Wehnelt voltage has to be in range from 0 to 3250")
             cmd = b'$$$setvtargetvw'
             cmd = cmd + bytes(str(wehnelt), encoding="ascii")
+            cmd = cmd + b'\n'
+            self.port.write(cmd)
+        if wehneltBlank is not None:
+            if (int(wehneltBlank) < 0) or (int(wehneltBlank) > 3250):
+                raise ValueError("Wehnelt blanking voltage has to be in range from 0 to 3250")
+            cmd = b'$$$setvtargetvwblank'
+            cmd = cmd + bytes(str(wehneltBlank), encoding="ascii")
             cmd = cmd + b'\n'
             self.port.write(cmd)
         if focus is not None:

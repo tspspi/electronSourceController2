@@ -9,7 +9,7 @@
 #define PWM_VPERUA 0.979959039479
 #define PWM_FILA_VPERDIV 0.224609375
 
-#define PWM_MAX_DIFFERENCE_W_K (75/PWM_VPERDIV)
+#define PWM_MAX_DIFFERENCE_W_K (50*PWM_VPERDIVK)
 
 #define VMAXSLOPE_V_PER_S 12
 
@@ -76,20 +76,21 @@ ISR(TIMER2_COMPA_vect) {
     }
     slopeUpdateInterval = slopeUpdateInterval + 1;
 
-    /* Verify that W and K are not spaced too far ... */
-    #if 0
+    /* Verify that W and K are not spaced too far ...  if they are clamp*/
     {
         unsigned long int diff;
         if(pwmoutOnCyclesReal[0] > pwmoutOnCyclesReal[2]) {
             diff = pwmoutOnCyclesReal[0] - pwmoutOnCyclesReal[2];
+            if(diff > PWM_MAX_DIFFERENCE_W_K) {
+                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] - PWM_MAX_DIFFERENCE_W_K;
+            }
         } else {
             diff = pwmoutOnCyclesReal[2] - pwmoutOnCyclesReal[0];
-        }
-        if(diff > PWM_MAX_DIFFERENCE_W_K) {
-            pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0];
+            if(diff > PWM_MAX_DIFFERENCE_W_K) {
+                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] + PWM_MAX_DIFFERENCE_W_K;
+            }
         }
     }
-    #endif
 
     for(i = 0; i < sizeof(pwmoutCurrentCycles)/sizeof(uint16_t)-1; i=i+1) {
         pwmoutCurrentCycles[i] = (pwmoutCurrentCycles[i] + 1) & 0x3FF;

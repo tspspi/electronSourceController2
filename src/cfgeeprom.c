@@ -19,10 +19,11 @@ struct cfgOptions cfgOptions_Default = {
 	{ /* Target voltages for beam on and insulation test */
 		2000,	/* Cathode */
 		2020,	/* Whenelt */
-		1980,	/* Focus */
+		2060,	/* Wehnelt blank */
+		1985,	/* Focus */
 		0 /* Aux */
 	},
-	{ /* Current limits: Beam on */ 900, 900, 900, 10 },
+	{ /* Current limits: Beam on */ 1000, 1000, 1000, 10 },
 	{ /* Current limits: Insulat ion test */ 10, 10, 10, 10 },
 	{
 		5, /* Voltage stepsize */

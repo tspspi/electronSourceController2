@@ -1334,6 +1334,10 @@ static void handleSerial0Messages_CompleteMessage(
         filamentCurrent_Enable(false);
         rampMode.mode = controllerRampMode__None;
         statusMessageOff();
+    } else if(strCompare("blank", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(cfgOptions.beamOnRampTargets.wehneltCylinderBlank, 2);
+    } else if(strCompare("unblank", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        setPSUVolts(cfgOptions.beamOnRampTargets.wehneltCylinder, 2);
     } else if(strCompare("filon", 5, handleSerial0Messages_StringBuffer, dwLen) == true) {
         filamentCurrent_Enable(true);
     } else if(strCompare("filoff", 6, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -1424,6 +1428,9 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setvtargetvw", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
+    } else if(strComparePrefix("setvtargetvwblank", 12+5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12-5);
+        cfgOptions.beamOnRampTargets.wehneltCylinderBlank = newV;
     } else if(strComparePrefix("setvtargetvf", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.focus = newV;
@@ -1436,6 +1443,8 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.cathode);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.wehneltCylinder);
+        ringBuffer_WriteChar(&serialRB0_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.wehneltCylinderBlank);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.focus);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1846,6 +1855,10 @@ void handleSerial0Messages() {
             filamentCurrent_Enable(false);
             rampMode.mode = controllerRampMode__None;
             statusMessageOff();
+        } else if(strCompare("blank", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(cfgOptions.beamOnRampTargets.wehneltCylinderBlank, 2);
+        } else if(strCompare("unblank", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+            setPSUVolts(cfgOptions.beamOnRampTargets.wehneltCylinder, 2);
         } else if(strCompare("filon", 5, handleSerial1Messages_StringBuffer, dwLen) == true) {
             filamentCurrent_Enable(true);
         } else if(strCompare("filoff", 6, handleSerial1Messages_StringBuffer, dwLen) == true) {
@@ -1936,6 +1949,9 @@ void handleSerial0Messages() {
     } else if(strComparePrefix("setvtargetvw", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
+    } else if(strComparePrefix("setvtargetvwblank", 12+5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12-5);
+        cfgOptions.beamOnRampTargets.wehneltCylinderBlank = newV;
     } else if(strComparePrefix("setvtargetvf", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.focus = newV;

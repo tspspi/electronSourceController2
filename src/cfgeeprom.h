@@ -14,6 +14,7 @@ struct cfgOptions {
 	struct {
 		unsigned long int cathode;
 		unsigned long int wehneltCylinder;
+		unsigned long int wehneltCylinderBlank;
 		unsigned long int focus;
 		unsigned long int aux;
 	} beamOnRampTargets;
