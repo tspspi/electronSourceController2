@@ -991,6 +991,19 @@ class ElectronGunControl:
         else:
             return None
 
+    def blank(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$blank\n')
+        return None
+
+    def unblank(self, *ignore, sync = False):
+        if self.port == False:
+            raise ElectronGunNotConnected("Electron gun currently not connected")
+        self.port.write(b'$$$unblank\n')
+        return None
+
+
     def setTargetVoltage(self, *ignore, cathode = None, wehnelt = None, wehneltBlank = None, focus = None, aux = None):
         if self.port == False:
             raise ElectronGunNotConnected("Electron gun currently not connected")
