@@ -1425,12 +1425,12 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setvtargetvk", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.cathode = newV;
-    } else if(strComparePrefix("setvtargetvw", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
-        cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
     } else if(strComparePrefix("setvtargetvwblank", 12+5, handleSerial0Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12-5);
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12+5]), dwLen-12-5);
         cfgOptions.beamOnRampTargets.wehneltCylinderBlank = newV;
+    } else if(strComparePrefix("setvtargetvw", 12+5, handleSerial0Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
+	cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
     } else if(strComparePrefix("setvtargetvf", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.focus = newV;
@@ -1447,8 +1447,8 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.wehneltCylinderBlank);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.focus);
-        ringBuffer_WriteChar(&serialRB0_TX, ':');
-        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.aux);
+        /* ringBuffer_WriteChar(&serialRB0_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.aux); */
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
     } else if(strComparePrefix("setbeamcurlimk", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
@@ -1946,12 +1946,12 @@ void handleSerial0Messages() {
     } else if(strComparePrefix("setvtargetvk", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.cathode = newV;
+    } else if(strComparePrefix("setvtargetvwblank", 12+5, handleSerial1Messages_StringBuffer, dwLen) == true) {
+        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12+5]), dwLen-12-5);
+        cfgOptions.beamOnRampTargets.wehneltCylinderBlank = newV;
     } else if(strComparePrefix("setvtargetvw", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
-        cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
-    } else if(strComparePrefix("setvtargetvwblank", 12+5, handleSerial1Messages_StringBuffer, dwLen) == true) {
-        uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12-5);
-        cfgOptions.beamOnRampTargets.wehneltCylinderBlank = newV;
+	cfgOptions.beamOnRampTargets.wehneltCylinder = newV;
     } else if(strComparePrefix("setvtargetvf", 12, handleSerial1Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial1Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.focus = newV;
@@ -1964,10 +1964,12 @@ void handleSerial0Messages() {
         ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.cathode);
         ringBuffer_WriteChar(&serialRB1_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.wehneltCylinder);
+	ringBuffer_WriteChar(&serialRB1_TX, ':');
+	ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.wehneltCylinderBlank);
         ringBuffer_WriteChar(&serialRB1_TX, ':');
         ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.focus);
-        ringBuffer_WriteChar(&serialRB1_TX, ':');
-        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.aux);
+        /* ringBuffer_WriteChar(&serialRB1_TX, ':');
+        ringBuffer_WriteASCIIUnsignedInt(&serialRB1_TX, cfgOptions.beamOnRampTargets.aux); */
         ringBuffer_WriteChar(&serialRB1_TX, 0x0A);
         serialModeTX1();
     } else if(strComparePrefix("setbeamcurlimk", 14, handleSerial1Messages_StringBuffer, dwLen) == true) {
