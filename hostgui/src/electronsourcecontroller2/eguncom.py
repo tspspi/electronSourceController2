@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.47 (Wed, 2023-10-18)"
+egun_version = "0.0.48 (Wed, 2023-10-18)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -840,7 +840,7 @@ class ElectronGunControl:
         if (current < 0) or (current > 2000):
             raise ElectronGunInvalidParameterException("Current has to be in range from 0 to 2000 uA")
 
-        cmd = cmd + bytes(str(channel), encoding="ascii") + bytes(str(voltage), encoding="ascii")
+        cmd = cmd + bytes(str(channel), encoding="ascii") + bytes(str(current), encoding="ascii")
 
         cmd = cmd + b'\n'
         self.port.write(cmd)
