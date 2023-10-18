@@ -291,6 +291,7 @@ int main() {
 
     /* Load configuration values from EEPROM */
     cfgeepromLoad();
+    //cfgeepromDefaults();
 
     /*
         Setup serial
