@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.46 (Wed, 2023-10-18)"
+egun_version = "0.0.47 (Wed, 2023-10-18)"
 
 print(f"Electron source controller: {egun_version}")
 
@@ -497,8 +497,8 @@ class ElectronGunControl:
                         'cathode' : float(parts[0]),
                         'wehnelt' : float(parts[1]),
                         'wehneltBlank' : float(parts[2]),
-                        'focus' : float(parts[3]),
-                        'aux' : float(parts[4].strip())
+                        'focus' : float(parts[3])
+                        # 'aux' : float(parts[4].strip())
                     }
                     if self.cbTargetVoltages:
                         if type(self.cbTargetVoltages) is list:
