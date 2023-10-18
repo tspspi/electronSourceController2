@@ -4,7 +4,7 @@ import time
 import atexit
 import json
 
-egun_version = "0.0.45 (Tue, 2022-12-06)"
+egun_version = "0.2.3 (Tue, 2023-10-18)"
 
 print(f"Electron source controller: {egun_version}")
 
