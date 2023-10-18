@@ -56,6 +56,7 @@ struct cfgOptions {
 
 void cfgeepromLoad();
 void cfgeepromStore();
+void cfgeepromDefaults();
 
 #ifndef __in_module__1eed2317_6f1c_11ed_b682_b499badf00a1
 	extern struct cfgOptions cfgOptions;
