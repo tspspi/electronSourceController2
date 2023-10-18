@@ -2,14 +2,16 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-#define PWM_VPERDIVK (3.24781922941*0.899405351856)
-#define PWM_VPERDIVW (3.49231230262*0.899009900992)
+#define PWM_VPERDIVW (3.24781922941*0.899405351856)
+#define PWM_VPERDIVK (3.49231230262*0.899009900992/1.08108108108)
 #define PWM_VPERDIVFOC 3.137850885
 #define PWM_VPERDIV4 3.1914893617
 #define PWM_VPERUA 0.979959039479
 #define PWM_FILA_VPERDIV 0.224609375
 
-#define PWM_MAX_DIFFERENCE_W_K (50*PWM_VPERDIVK)
+// V / PWM_VPERDIVK
+#define PWM_MAX_DIFFERENCE_W_K_POS 32 
+#define PWM_MAX_DIFFERENCE_W_K_NEG 5
 
 #define VMAXSLOPE_V_PER_S 12
 
@@ -73,25 +75,25 @@ ISR(TIMER2_COMPA_vect) {
                 pwmoutOnCyclesReal[i] = pwmoutOnCycles[i];
             }
         }
+	    /* Verify that W and K are not spaced too far ...  if they are clamp */
+
+	    {
+	        unsigned long int diff;
+	        if(pwmoutOnCyclesReal[0] > pwmoutOnCyclesReal[2]) {
+	            diff = pwmoutOnCyclesReal[0] - pwmoutOnCyclesReal[2];
+	            if(diff > PWM_MAX_DIFFERENCE_W_K_NEG) {
+	                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] - PWM_MAX_DIFFERENCE_W_K_NEG;
+	            }
+	        } else {
+	            diff = pwmoutOnCyclesReal[2] - pwmoutOnCyclesReal[0];
+	            if(diff > PWM_MAX_DIFFERENCE_W_K_POS) {
+	                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] + PWM_MAX_DIFFERENCE_W_K_POS;
+	            }
+	        }
+	    }
     }
     slopeUpdateInterval = slopeUpdateInterval + 1;
-
-    /* Verify that W and K are not spaced too far ...  if they are clamp*/
-    {
-        unsigned long int diff;
-        if(pwmoutOnCyclesReal[0] > pwmoutOnCyclesReal[2]) {
-            diff = pwmoutOnCyclesReal[0] - pwmoutOnCyclesReal[2];
-            if(diff > PWM_MAX_DIFFERENCE_W_K) {
-                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] - PWM_MAX_DIFFERENCE_W_K;
-            }
-        } else {
-            diff = pwmoutOnCyclesReal[2] - pwmoutOnCyclesReal[0];
-            if(diff > PWM_MAX_DIFFERENCE_W_K) {
-                pwmoutOnCyclesReal[2] = pwmoutOnCyclesReal[0] + PWM_MAX_DIFFERENCE_W_K;
-            }
-        }
-    }
-
+    
     for(i = 0; i < sizeof(pwmoutCurrentCycles)/sizeof(uint16_t)-1; i=i+1) {
         pwmoutCurrentCycles[i] = (pwmoutCurrentCycles[i] + 1) & 0x3FF;
         if(pwmoutCurrentCycles[i] >= pwmoutOnCyclesReal[i]) {
