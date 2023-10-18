@@ -2,16 +2,20 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-#define PWM_VPERDIVW (3.24781922941*0.899405351856)
-#define PWM_VPERDIVK (3.49231230262*0.899009900992/1.08108108108)
+#define PWM_VPERDIVK (3.24781922941*0.899405351856)
+#define PWM_VPERDIVW (3.49231230262*0.899009900992)
 #define PWM_VPERDIVFOC 3.137850885
 #define PWM_VPERDIV4 3.1914893617
 #define PWM_VPERUA 0.979959039479
 #define PWM_FILA_VPERDIV 0.224609375
 
 // V / PWM_VPERDIVK
-#define PWM_MAX_DIFFERENCE_W_K_POS 32 
-#define PWM_MAX_DIFFERENCE_W_K_NEG 5
+/*
+ #define PWM_MAX_DIFFERENCE_W_K_POS 32 
+ #define PWM_MAX_DIFFERENCE_W_K_NEG 15 
+*/
+#define PWM_MAX_DIFFERENCE_W_K_PV 100
+#define PWM_MAX_DIFFERENCE_W_K_NV 15
 
 #define VMAXSLOPE_V_PER_S 12
 
@@ -76,7 +80,7 @@ ISR(TIMER2_COMPA_vect) {
             }
         }
 	    /* Verify that W and K are not spaced too far ...  if they are clamp */
-
+#if 0
 	    {
 	        unsigned long int diff;
 	        if(pwmoutOnCyclesReal[0] > pwmoutOnCyclesReal[2]) {
@@ -91,6 +95,24 @@ ISR(TIMER2_COMPA_vect) {
 	            }
 	        }
 	    }
+#endif
+        {
+            float diff;
+	    float vW, vK;
+	    vK = pwmoutOnCyclesReal[0] * PWM_VPERDIVK;
+	    vW = pwmoutOnCyclesReal[2] * PWM_VPERDIVW;
+	    if(vK > vW) {
+                diff = vK - vW;
+		if(diff > PWM_MAX_DIFFERENCE_W_K_NV) {
+		    pwmoutOnCyclesReal[2] = (unsigned int)(vK - PWM_MAX_DIFFERENCE_W_K_NV) / PWM_VPERDIVW;
+		}
+	    } else {
+		diff = vW - vK;
+		if(diff > PWM_MAX_DIFFERENCE_W_K_PV) {
+		    pwmoutOnCyclesReal[2] = (unsigned int)(vK + PWM_MAX_DIFFERENCE_W_K_PV) / PWM_VPERDIVW;
+		}
+            }
+	}
     }
     slopeUpdateInterval = slopeUpdateInterval + 1;
     
