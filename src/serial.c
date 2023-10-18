@@ -1437,6 +1437,7 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setvtargetva", 12, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[12]), dwLen-12);
         cfgOptions.beamOnRampTargets.aux = newV;
+#if 0
     } else if(strCompare("getvtarget", 10, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETVTARGET, sizeof(handleSerial0Messages_Response__GETVTARGET)-1);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1451,6 +1452,7 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnRampTargets.aux); */
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
+#endif
     } else if(strComparePrefix("setbeamcurlimk", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-14);
         cfgOptions.beamOnCurrentLimits.cathode = newV;
@@ -1463,6 +1465,7 @@ static void handleSerial0Messages_CompleteMessage(
     } else if(strComparePrefix("setbeamcurlima", 14, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[14]), dwLen-14);
         cfgOptions.beamOnCurrentLimits.aux = newV;
+#if 0
     } else if(strCompare("getbeamcurlim", 13, handleSerial0Messages_StringBuffer, dwLen) == true) {
         ringBuffer_WriteChars(&serialRB0_TX, handleSerial0Messages_Response__GETBEAMCURLIM, sizeof(handleSerial0Messages_Response__GETBEAMCURLIM)-1);
         ringBuffer_WriteChar(&serialRB0_TX, ':');
@@ -1475,6 +1478,7 @@ static void handleSerial0Messages_CompleteMessage(
         ringBuffer_WriteASCIIUnsignedInt(&serialRB0_TX, cfgOptions.beamOnCurrentLimits.aux);
         ringBuffer_WriteChar(&serialRB0_TX, 0x0A);
         serialModeTX0();
+#endif
     } else if(strComparePrefix("setinsulcurlimk", 15, handleSerial0Messages_StringBuffer, dwLen) == true) {
         uint32_t newV = strASCIIToDecimal(&(handleSerial0Messages_StringBuffer[15]), dwLen-15);
         cfgOptions.insulationCurrentLimits.cathode = newV;
@@ -2178,6 +2182,7 @@ void handleSerial0Messages() {
     = Command handler for serial protocol on USART2 =
     =================================================
 */
+
 
 static unsigned char handleSerial2Messages_StringBuffer[32];
 
